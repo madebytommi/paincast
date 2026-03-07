@@ -1,0 +1,252 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>PainCast - Daily Chronic Pain Index</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet"
+        integrity="sha384-QWTKZyjpPEjISv5WaRU9OFeRpok6YctnYmDr5pNlyT2bRjXh0JMhjY6hW+ALEwIH" crossorigin="anonymous">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="styles.css">
+</head>
+
+<body class="bg-slate-900 text-light font-sans min-vh-100 d-flex flex-column align-items-center">
+
+    <header class="w-100 text-center py-4 mt-4">
+        <h1 class="display-5 fw-bold text-gradient mb-0">
+            <i class="fa-solid fa-cloud-bolt me-2"></i>PainCast
+        </h1>
+        <p class="text-slate-400 mt-2">Daily Chronic Pain Index Predictor</p>
+    </header>
+
+    <main class="w-100 max-w-4xl px-3 flex-grow-1 d-flex flex-column align-items-center gap-4">
+
+        <!-- Location Entry / Info -->
+        <div id="location-container"
+            class="w-100 glass-card rounded-4 p-3 d-flex flex-column flex-sm-row justify-content-between align-items-center custom-transition">
+            <div class="d-flex align-items-center gap-2 mb-3 mb-sm-0">
+                <i class="fa-solid fa-location-dot text-slate-400"></i>
+                <span id="location-display" class="fw-medium">Acquiring location...</span>
+            </div>
+            <div class="d-flex gap-2">
+                <button id="btn-refresh" class="btn btn-sm btn-slate-700 text-light rounded-3 custom-transition"
+                    title="Refresh Weather Data">
+                    <i class="fa-solid fa-rotate-right"></i>
+                </button>
+                <button id="btn-manual-location"
+                    class="btn btn-sm btn-slate-700 text-light rounded-3 custom-transition">
+                    Change Location
+                </button>
+            </div>
+        </div>
+
+        <!-- Manual Location Modal (Hidden by default) -->
+        <div id="modal-location"
+            class="d-none w-100 bg-white rounded-4 p-4 shadow-xl position-relative animate-fade-in border">
+            <button id="btn-close-modal"
+                class="btn btn-link position-absolute top-0 end-0 mt-2 me-2 text-slate-400 hover-text-dark text-decoration-none">
+                <i class="fa-solid fa-xmark fs-5"></i>
+            </button>
+            <h2 class="fs-5 fw-semibold mb-3 text-light">Enter Location</h2>
+            <div class="d-flex flex-column flex-sm-row gap-2">
+                <input type="text" id="input-location" placeholder="City, State or ZIP (e.g., Nashville, TN)"
+                    class="form-control bg-slate-900 border-slate-700 text-light py-2 px-3 rounded-3"
+                    autocomplete="off">
+                <button id="btn-submit-location" class="btn btn-primary fw-medium px-4 py-2 rounded-3"
+                    style="min-width: 120px;">Update</button>
+            </div>
+            <p class="small text-slate-500 mt-2 mb-0"><i class="fa-solid fa-circle-info me-1"></i> Powered by
+                OpenStreetMap Geocoding.</p>
+        </div>
+
+        <!-- Loading State -->
+        <div id="loading-state" class="w-100 py-5 d-flex flex-column justify-content-center align-items-center">
+            <div class="spinner-border text-primary custom-spinner" role="status">
+                <span class="visually-hidden">Loading...</span>
+            </div>
+            <p class="mt-3 text-slate-400 animate-pulse">Analyzing weather patterns...</p>
+        </div>
+
+        <!-- Error State -->
+        <div id="error-state" class="d-none w-100 error-card rounded-4 p-4 text-center">
+            <i class="fa-solid fa-triangle-exclamation display-6 mb-3 text-danger"></i>
+            <h3 class="fs-5 fw-bold mb-2 text-danger-light">Data Fetch Failed</h3>
+            <p id="error-message" class="text-danger-lighter mb-0">We couldn't retrieve the weather data.</p>
+            <button id="btn-retry" class="btn btn-danger mt-3 px-4 fw-medium rounded-3">Try Again</button>
+        </div>
+
+        <!-- Main Dashboard (Hidden while loading) -->
+        <div id="dashboard" class="d-none w-100 d-flex flex-column gap-4 animate-fade-in">
+
+            <!-- Top Section: Pain Index + Current Weather -->
+            <div class="row g-4">
+
+                <!-- Pain Index Display -->
+                <div class="col-md-6">
+                    <div
+                        class="h-100 bg-slate-800 border-slate-700 rounded-4 p-4 d-flex flex-column align-items-center justify-content-center text-center shadow-lg position-relative overflow-hidden pain-index-card">
+                        <div id="index-glow"
+                            class="position-absolute w-100 h-100 top-0 start-0 opacity-25 custom-transition"
+                            style="z-index: 0;"></div>
+                        <h2 id="pain-index-title"
+                            class="text-slate-400 fw-semibold mb-2 position-relative text-uppercase tracking-widest small"
+                            style="z-index: 1;">
+                            Current Pain Index</h2>
+                        <div class="d-flex align-items-baseline justify-content-center gap-2 position-relative mb-2"
+                            style="z-index: 1;">
+                            <span id="pain-index-value"
+                                class="display-1 fw-bold tabular-nums custom-transition">--</span>
+                            <span class="fs-4 fw-bold text-slate-500">/ 10</span>
+                        </div>
+                        <p id="pain-index-label" class="fs-5 fw-medium position-relative custom-transition mb-1"
+                            style="z-index: 1;">
+                            Loading...</p>
+                        <p id="pain-index-desc"
+                            class="small text-slate-400 mt-2 position-relative mx-auto max-w-250 mb-0"
+                            style="z-index: 1;">
+                            Calculated based on temperature, pressure, and humidity.
+                        </p>
+                    </div>
+                </div>
+
+                <!-- Current Weather Breakdown -->
+                <div class="col-md-6">
+                    <div class="h-100 bg-slate-800 border-slate-700 rounded-4 p-4 shadow-lg d-flex flex-column">
+                        <h2
+                            class="text-slate-400 fw-semibold mb-3 text-uppercase tracking-widest small border-bottom border-slate-700 pb-2">
+                            Current Weather</h2>
+                        <div class="row g-3 flex-grow-1">
+                            <div class="col-6">
+                                <div
+                                    class="bg-slate-900 rounded-3 p-3 d-flex flex-column align-items-center justify-content-center border-slate-800 h-100 text-center">
+                                    <i class="fa-solid fa-temperature-empty text-primary-light fs-4 mb-2"></i>
+                                    <span id="val-temp" class="fs-4 fw-bold">--°F</span>
+                                    <span class="small text-slate-500">Temperature</span>
+                                </div>
+                            </div>
+                            <div class="col-6">
+                                <div
+                                    class="bg-slate-900 rounded-3 p-3 d-flex flex-column align-items-center justify-content-center border-slate-800 h-100 text-center">
+                                    <i class="fa-solid fa-droplet text-info fs-4 mb-2"></i>
+                                    <span id="val-hum" class="fs-4 fw-bold">--%</span>
+                                    <span class="small text-slate-500">Humidity</span>
+                                </div>
+                            </div>
+                            <div class="col-6">
+                                <div
+                                    class="bg-slate-900 rounded-3 p-3 d-flex flex-column align-items-center justify-content-center border-slate-800 h-100 text-center">
+                                    <i class="fa-solid fa-gauge-high text-custom-purple fs-4 mb-2"></i>
+                                    <span id="val-pres" class="fs-4 fw-bold">-- hPa</span>
+                                    <span class="small text-slate-500">Pressure</span>
+                                </div>
+                            </div>
+                            <div class="col-6">
+                                <div
+                                    class="bg-slate-900 rounded-3 p-3 d-flex flex-column align-items-center justify-content-center border-slate-800 h-100 text-center">
+                                    <i class="fa-solid fa-wind text-slate-400 fs-4 mb-2"></i>
+                                    <span id="val-wind" class="fs-4 fw-bold">-- km/h</span>
+                                    <span class="small text-slate-500">Wind</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+            </div>
+
+            <!-- Contribution Breakdown -->
+            <div class="bg-slate-800 border-slate-700 rounded-4 p-4 shadow-lg">
+                <h2
+                    class="text-slate-400 fw-semibold mb-3 text-uppercase tracking-widest small border-bottom border-slate-700 pb-2">
+                    Index Factors</h2>
+                <div class="d-flex flex-column gap-3">
+                    <div class="d-flex align-items-center justify-content-between">
+                        <div class="d-flex align-items-center gap-3">
+                            <div class="icon-circle icon-circle-blue">
+                                <i class="fa-solid fa-temperature-arrow-down"></i>
+                            </div>
+                            <div>
+                                <p class="fw-medium text-light mb-0">Cold Temperature</p>
+                                <p class="small text-slate-500 mb-0" style="font-size: 0.75rem;">Colder than 59°F
+                                    increases joint stiffness</p>
+                            </div>
+                        </div>
+                        <span id="factor-temp" class="fw-bold font-monospace bg-slate-900 px-2 py-1 rounded-2">--</span>
+                    </div>
+
+                    <div class="d-flex align-items-center justify-content-between">
+                        <div class="d-flex align-items-center gap-3">
+                            <div class="icon-circle icon-circle-purple">
+                                <i class="fa-solid fa-arrow-right-arrow-left"></i>
+                            </div>
+                            <div>
+                                <p class="fw-medium text-light mb-0">Barometric Change</p>
+                                <p class="small text-slate-500 mb-0" style="font-size: 0.75rem;">Pressure shifts past 1
+                                    hour</p>
+                            </div>
+                        </div>
+                        <span id="factor-delta"
+                            class="fw-bold font-monospace bg-slate-900 px-2 py-1 rounded-2">--</span>
+                    </div>
+
+                    <div class="d-flex align-items-center justify-content-between">
+                        <div class="d-flex align-items-center gap-3">
+                            <div class="icon-circle icon-circle-indigo">
+                                <i class="fa-solid fa-weight-hanging"></i>
+                            </div>
+                            <div>
+                                <p class="fw-medium text-light mb-0">High Pressure Level</p>
+                                <p class="small text-slate-500 mb-0" style="font-size: 0.75rem;">Base level above 1005
+                                    hPa</p>
+                            </div>
+                        </div>
+                        <span id="factor-pres" class="fw-bold font-monospace bg-slate-900 px-2 py-1 rounded-2">--</span>
+                    </div>
+
+                    <div class="d-flex align-items-center justify-content-between">
+                        <div class="d-flex align-items-center gap-3">
+                            <div class="icon-circle icon-circle-cyan">
+                                <i class="fa-solid fa-droplet"></i>
+                            </div>
+                            <div>
+                                <p class="fw-medium text-light mb-0">High Humidity</p>
+                                <p class="small text-slate-500 mb-0" style="font-size: 0.75rem;">Relative humidity over
+                                    60%</p>
+                            </div>
+                        </div>
+                        <span id="factor-hum" class="fw-bold font-monospace bg-slate-900 px-2 py-1 rounded-2">--</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 24-Hour Forecast Chart -->
+            <div class="bg-slate-800 border-slate-700 rounded-4 p-4 shadow-lg mb-5">
+                <h2
+                    class="text-slate-400 fw-semibold mb-3 text-uppercase tracking-widest small border-bottom border-slate-700 pb-2">
+                    24-Hour Pain Outlook</h2>
+                <div class="w-100 position-relative chart-container">
+                    <canvas id="forecast-chart"></canvas>
+                </div>
+            </div>
+
+        </div>
+
+    </main>
+
+    <footer class="w-100 text-center py-4 text-slate-500 small mt-auto border-top border-slate-800">
+        <p class="mb-1"><i class="fa-solid fa-circle-info me-1"></i> Disclaimer: This is an estimate based on weather
+            studies, not medical advice. Individual results vary.</p>
+        <p class="mt-1 text-slate-600 mb-3">Weather data provided by <a href="https://open-meteo.com/" target="_blank"
+                class="text-slate-500 text-decoration-underline hover-text-white">Open-Meteo</a></p>
+    </footer>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"
+        integrity="sha384-YvpcrYf0tY3lHB60NNkmxc5s9fDVZLESaAA55NDzOxhy9GkcIdslK1eN7N6jIeHz"
+        crossorigin="anonymous"></script>
+    <script defer src="script.js"></script>
+</body>
+
+</html>
