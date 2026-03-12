@@ -315,6 +315,65 @@ body {
     height: 16rem;
 }
 
+.weekly-outlook-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+    gap: 1rem;
+}
+
+.weekly-card {
+    background: rgba(255, 255, 255, 0.82);
+    border: 1px solid rgba(255, 255, 255, 0.9);
+    border-radius: 1rem;
+    padding: 1rem;
+    box-shadow: 0 12px 30px rgba(15, 23, 42, 0.05);
+}
+
+.weekly-card-low {
+    box-shadow: inset 0 0 0 1px rgba(34, 197, 94, 0.15), 0 12px 30px rgba(15, 23, 42, 0.05);
+}
+
+.weekly-card-med {
+    box-shadow: inset 0 0 0 1px rgba(245, 158, 11, 0.18), 0 12px 30px rgba(15, 23, 42, 0.05);
+}
+
+.weekly-card-high {
+    box-shadow: inset 0 0 0 1px rgba(239, 68, 68, 0.18), 0 12px 30px rgba(15, 23, 42, 0.05);
+}
+
+.weekly-card-day {
+    color: var(--text-primary);
+    font-size: 1rem;
+    font-weight: 700;
+}
+
+.weekly-card-date,
+.weekly-card-meta,
+.weekly-card-label {
+    color: var(--text-tertiary);
+    font-size: 0.85rem;
+}
+
+.weekly-card-index {
+    color: var(--text-primary);
+    font-size: 1.75rem;
+    font-weight: 800;
+    line-height: 1;
+}
+
+.weekly-card-index span {
+    font-size: 0.95rem;
+    font-weight: 600;
+    color: var(--text-tertiary);
+    margin-left: 0.15rem;
+}
+
+.weekly-card-meta {
+    display: flex;
+    flex-direction: column;
+    gap: 0.35rem;
+}
+
 canvas {
     max-width: 100%;
 }

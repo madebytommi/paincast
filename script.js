@@ -4,6 +4,9 @@ const DEFAULT_LON = -86.7816;
 
 let currentChart = null;
 
+const DAY_LABEL_FORMATTER = new Intl.DateTimeFormat([], { weekday: 'short' });
+const DAY_DATE_FORMATTER = new Intl.DateTimeFormat([], { month: 'short', day: 'numeric' });
+
 const dom = {
     dashboard: document.getElementById('dashboard'),
     loadingState: document.getElementById('loading-state'),
@@ -35,7 +38,8 @@ const dom = {
     factorPres: document.getElementById('factor-pres'),
     factorHum: document.getElementById('factor-hum'),
 
-    chartCanvas: document.getElementById('forecast-chart')
+    chartCanvas: document.getElementById('forecast-chart'),
+    weeklyOutlook: document.getElementById('weekly-outlook')
 };
 
 function init() {
@@ -312,7 +316,69 @@ function processWeatherData(data, locationName) {
     }
 
     renderChart(labels, forecastData);
+    renderWeeklyOutlook(buildWeeklyOutlook(hourly, currentIndex));
     showDashboard();
+}
+
+function buildWeeklyOutlook(hourly, startIndex) {
+    const dayBuckets = [];
+
+    for (let i = startIndex; i < hourly.time.length; i++) {
+        const date = new Date(hourly.time[i]);
+        const dayKey = hourly.time[i].split('T')[0];
+        let bucket = dayBuckets[dayBuckets.length - 1];
+
+        if (!bucket || bucket.dayKey !== dayKey) {
+            bucket = {
+                dayKey,
+                date,
+                temps: [],
+                humidity: [],
+                pressure: []
+            };
+            dayBuckets.push(bucket);
+        }
+
+        bucket.temps.push(hourly.temperature_2m[i]);
+        bucket.humidity.push(hourly.relative_humidity_2m[i]);
+        bucket.pressure.push(hourly.pressure_msl[i]);
+
+        if (dayBuckets.length === 7 && i < hourly.time.length - 1) {
+            const nextDay = hourly.time[i + 1].split('T')[0];
+            if (nextDay !== dayKey) {
+                break;
+            }
+        }
+    }
+
+    return dayBuckets.slice(0, 7).map((bucket, index, buckets) => {
+        const avgTemp = average(bucket.temps);
+        const avgHumidity = average(bucket.humidity);
+        const avgPressure = average(bucket.pressure);
+        const prevAvgPressure = index > 0 ? average(buckets[index - 1].pressure) : avgPressure;
+        const scores = calculatePainFactorScores(avgTemp, avgHumidity, avgPressure, prevAvgPressure);
+        const painIndex = calculateFinalIndex(scores);
+        const styles = getStylesForIndex(painIndex);
+
+        return {
+            dayLabel: DAY_LABEL_FORMATTER.format(bucket.date),
+            dateLabel: DAY_DATE_FORMATTER.format(bucket.date),
+            painIndex,
+            label: styles.label,
+            tempLow: Math.round(Math.min(...bucket.temps)),
+            tempHigh: Math.round(Math.max(...bucket.temps)),
+            avgHumidity: Math.round(avgHumidity)
+        };
+    });
+}
+
+function average(values) {
+    if (!values.length) {
+        return 0;
+    }
+
+    const total = values.reduce((sum, value) => sum + value, 0);
+    return total / values.length;
 }
 
 function updateDashboardUI(current, scores, index, locationName) {
@@ -348,6 +414,31 @@ function updateDashboardUI(current, scores, index, locationName) {
     dom.indexGlow.classList.add(styles.bg);
     dom.painLabel.textContent = styles.label;
     dom.painLabel.className = `text-xl font-medium relative z-10 transition-colors duration-500 ${styles.text}`;
+}
+
+function renderWeeklyOutlook(days) {
+    dom.weeklyOutlook.innerHTML = days.map(day => {
+        const toneClass = day.painIndex <= 3 ? 'weekly-card-low' : day.painIndex <= 6 ? 'weekly-card-med' : 'weekly-card-high';
+
+        return `
+            <article class="weekly-card ${toneClass}">
+                <div class="d-flex align-items-start justify-content-between gap-3 mb-3">
+                    <div>
+                        <p class="weekly-card-day mb-1">${day.dayLabel}</p>
+                        <p class="weekly-card-date mb-0">${day.dateLabel}</p>
+                    </div>
+                    <div class="weekly-card-index-wrap text-end">
+                        <p class="weekly-card-index mb-0">${day.painIndex}<span>/10</span></p>
+                        <p class="weekly-card-label mb-0">${day.label}</p>
+                    </div>
+                </div>
+                <div class="weekly-card-meta">
+                    <span>${day.tempLow}° to ${day.tempHigh}°F</span>
+                    <span>${day.avgHumidity}% humidity</span>
+                </div>
+            </article>
+        `;
+    }).join('');
 }
 
 // --- Chart.js ---
