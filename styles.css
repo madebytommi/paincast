@@ -36,6 +36,10 @@ body {
     color: var(--text-secondary) !important;
 }
 
+.text-slate-300 {
+    color: #334155 !important;
+}
+
 .text-slate-500 {
     color: var(--text-tertiary) !important;
 }
@@ -76,10 +80,15 @@ body {
 
 /* Custom Text Gradient */
 .text-gradient {
-    background: linear-gradient(to right, var(--c-pink), var(--c-indigo), var(--c-blue));
+    background: linear-gradient(90deg, #f59e0b, #ec4899);
     -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
     background-clip: text;
     color: transparent;
+}
+
+#index-glow {
+    background: radial-gradient(circle at center, #f59e0b30 0%, transparent 70%);
 }
 
 /* Max Width Constraint */
@@ -88,8 +97,20 @@ body {
     margin-inline: auto;
 }
 
+.max-w-md {
+    max-width: 28rem;
+}
+
+.max-w-lg {
+    max-width: 34rem;
+}
+
 .max-w-250 {
     max-width: 250px;
+}
+
+.hero-blurb {
+    width: 100%;
 }
 
 /* Dashboard Cards */
@@ -103,6 +124,10 @@ body {
 
 .pain-index-card {
     background-color: rgba(255, 255, 255, 0.85) !important;
+}
+
+#dashboard > div {
+    box-shadow: 0 0 0 1px rgba(245, 158, 11, 0.1);
 }
 
 /* Error States */
