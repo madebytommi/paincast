@@ -3,8 +3,8 @@ body {
     font-family: 'Inter', sans-serif;
     overflow-x: hidden;
     background-color: var(--bg-main) !important;
-    background-image: radial-gradient(circle at top right, rgba(217, 54, 206, 0.05), transparent 400px),
-        radial-gradient(circle at bottom left, rgba(74, 150, 217, 0.05), transparent 400px);
+    background-image: radial-gradient(circle at top right, rgba(0, 205, 0, 0.05), transparent 400px),
+        radial-gradient(circle at bottom left, rgba(0, 168, 0, 0.05), transparent 400px);
     color: var(--text-primary) !important;
 }
 
@@ -18,10 +18,10 @@ body {
     --text-secondary: #475569;
     --text-tertiary: #64748b;
 
-    --c-pink: #D936CE;
-    --c-purple: #A659D9;
-    --c-indigo: #7471D9;
-    --c-blue: #4A96D9;
+    --c-pink: #00CD00;
+    --c-purple: #00A800;
+    --c-indigo: #008000;
+    --c-blue: #00D000;
 }
 
 .bg-slate-900 {
@@ -80,7 +80,7 @@ body {
 
 /* Custom Text Gradient */
 .text-gradient {
-    background: linear-gradient(90deg, #f59e0b, #ec4899);
+    background: linear-gradient(90deg, #00CD00, #00FF00);
     -webkit-background-clip: text;
     -webkit-text-fill-color: transparent;
     background-clip: text;
@@ -88,7 +88,7 @@ body {
 }
 
 #index-glow {
-    background: radial-gradient(circle at center, #f59e0b30 0%, transparent 70%);
+    background: radial-gradient(circle at center, #00CD0030 0%, transparent 70%);
 }
 
 /* Max Width Constraint */
@@ -127,7 +127,7 @@ body {
 }
 
 #dashboard > div {
-    box-shadow: 0 0 0 1px rgba(245, 158, 11, 0.1);
+    box-shadow: 0 0 0 1px rgba(0, 205, 0, 0.1);
 }
 
 /* Error States */
