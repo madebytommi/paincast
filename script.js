@@ -1,8 +1,11 @@
 
 const DEFAULT_LAT = 36.1627;
 const DEFAULT_LON = -86.7816;
+const THEME_STORAGE_KEY = 'paincast_theme';
+const THEME_ORDER = ['light', 'dark', 'contrast'];
 
 let currentChart = null;
+let chartState = null;
 
 const DAY_LABEL_FORMATTER = new Intl.DateTimeFormat([], { weekday: 'short' });
 const DAY_DATE_FORMATTER = new Intl.DateTimeFormat([], { month: 'short', day: 'numeric' });
@@ -22,6 +25,11 @@ const dom = {
     btnCloseModal: document.getElementById('btn-close-modal'),
     btnSubmitLocation: document.getElementById('btn-submit-location'),
     inputLocation: document.getElementById('input-location'),
+    btnThemeToggle: document.getElementById('btn-theme-toggle'),
+    themeDropdownMenu: document.getElementById('theme-dropdown-menu'),
+    themeToggleIcon: document.getElementById('theme-toggle-icon'),
+    themeToggleLabel: document.getElementById('theme-toggle-label'),
+    themeOptions: document.querySelectorAll('.theme-option'),
 
     painIndexTitle: document.getElementById('pain-index-title'),
     painValue: document.getElementById('pain-index-value'),
@@ -44,6 +52,8 @@ const dom = {
 
 function init() {
     setupEventListeners();
+    initTheme();
+
     const savedLoc = localStorage.getItem('paincast_location');
     if (savedLoc) {
         const { lat, lon, manual, locationName } = JSON.parse(savedLoc);
@@ -63,6 +73,104 @@ function setupEventListeners() {
     dom.btnSubmitLocation.addEventListener('click', handleManualSubmit);
     dom.btnRefresh.addEventListener('click', refreshData);
     dom.btnRetry.addEventListener('click', refreshData);
+    dom.btnThemeToggle.addEventListener('click', toggleThemeDropdown);
+
+    document.addEventListener('click', handleDocumentClick);
+    document.addEventListener('keydown', handleDocumentKeydown);
+
+    dom.themeOptions.forEach(option => {
+        option.addEventListener('click', handleThemeSelect);
+    });
+}
+
+function toggleThemeDropdown(event) {
+    event.preventDefault();
+    event.stopPropagation();
+
+    if (!dom.themeDropdownMenu) {
+        return;
+    }
+
+    const isOpen = dom.themeDropdownMenu.classList.toggle('show');
+    dom.btnThemeToggle.setAttribute('aria-expanded', isOpen ? 'true' : 'false');
+}
+
+function closeThemeDropdown() {
+    if (!dom.themeDropdownMenu) {
+        return;
+    }
+
+    dom.themeDropdownMenu.classList.remove('show');
+    dom.btnThemeToggle.setAttribute('aria-expanded', 'false');
+}
+
+function handleDocumentClick(event) {
+    if (!dom.themeDropdownMenu || !dom.btnThemeToggle) {
+        return;
+    }
+
+    const clickedInsideMenu = dom.themeDropdownMenu.contains(event.target);
+    const clickedToggle = dom.btnThemeToggle.contains(event.target);
+
+    if (!clickedInsideMenu && !clickedToggle) {
+        closeThemeDropdown();
+    }
+}
+
+function handleDocumentKeydown(event) {
+    if (event.key === 'Escape') {
+        closeThemeDropdown();
+    }
+}
+
+function initTheme() {
+    const savedTheme = localStorage.getItem(THEME_STORAGE_KEY);
+    const prefersDark = window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches;
+    const fallbackTheme = prefersDark ? 'dark' : 'light';
+    const theme = THEME_ORDER.includes(savedTheme) ? savedTheme : fallbackTheme;
+
+    applyTheme(theme);
+}
+
+function handleThemeSelect(event) {
+    const selectedTheme = event.currentTarget.dataset.themeValue;
+    if (!THEME_ORDER.includes(selectedTheme)) {
+        return;
+    }
+
+    applyTheme(selectedTheme);
+    localStorage.setItem(THEME_STORAGE_KEY, selectedTheme);
+    closeThemeDropdown();
+
+    if (chartState) {
+        renderChart(chartState.labels, chartState.data);
+    }
+}
+
+function applyTheme(theme) {
+    const activeTheme = THEME_ORDER.includes(theme) ? theme : 'light';
+    const toggleMap = {
+        light: { label: 'Theme: Light', icon: 'fa-sun' },
+        dark: { label: 'Theme: Dark', icon: 'fa-moon' },
+        contrast: { label: 'Theme: High Contrast', icon: 'fa-circle-half-stroke' }
+    };
+
+    document.body.dataset.theme = activeTheme;
+    document.documentElement.setAttribute('data-bs-theme', activeTheme === 'light' ? 'light' : 'dark');
+
+    if (dom.themeToggleLabel) {
+        dom.themeToggleLabel.textContent = toggleMap[activeTheme].label;
+    }
+
+    if (dom.themeToggleIcon) {
+        dom.themeToggleIcon.className = `fa-solid ${toggleMap[activeTheme].icon} me-1`;
+    }
+
+    dom.themeOptions.forEach(option => {
+        const isActive = option.dataset.themeValue === activeTheme;
+        option.classList.toggle('active', isActive);
+        option.setAttribute('aria-current', isActive ? 'true' : 'false');
+    });
 }
 
 function refreshData() {
@@ -443,6 +551,11 @@ function renderWeeklyOutlook(days) {
 
 // --- Chart.js ---
 function renderChart(labels, data) {
+    chartState = {
+        labels: [...labels],
+        data: [...data]
+    };
+
     if (currentChart) {
         currentChart.destroy();
     }
@@ -460,9 +573,22 @@ function renderChart(labels, data) {
         return '#ef4444';
     });
 
+    const activeTheme = document.body.dataset.theme || 'light';
+    const isDarkLikeTheme = activeTheme === 'dark' || activeTheme === 'contrast';
+    const isContrastTheme = activeTheme === 'contrast';
+    const chartTextColor = isContrastTheme ? '#ffffff' : isDarkLikeTheme ? '#b8c6d4' : '#475569';
+    const chartGridColor = isContrastTheme ? '#ffffff66' : isDarkLikeTheme ? '#5872864d' : '#33415550';
+    const tooltipBg = isContrastTheme
+        ? 'rgba(0, 0, 0, 1)'
+        : isDarkLikeTheme
+            ? 'rgba(14, 24, 31, 0.96)'
+            : 'rgba(255, 255, 255, 0.9)';
+    const tooltipText = isContrastTheme ? '#ffffff' : isDarkLikeTheme ? '#dbe9f6' : '#1e293b';
+    const tooltipBorder = isContrastTheme ? '#ffffff' : isDarkLikeTheme ? '#385061' : '#cbd5e1';
+
     const ctx = dom.chartCanvas.getContext('2d');
 
-    Chart.defaults.color = '#475569'; // slate-600
+    Chart.defaults.color = chartTextColor;
     Chart.defaults.font.family = "'Inter', sans-serif";
 
     currentChart = new Chart(ctx, {
@@ -486,10 +612,10 @@ function renderChart(labels, data) {
                     display: false
                 },
                 tooltip: {
-                    backgroundColor: 'rgba(255, 255, 255, 0.9)',
-                    titleColor: '#1e293b',
-                    bodyColor: '#1e293b',
-                    borderColor: '#cbd5e1',
+                    backgroundColor: tooltipBg,
+                    titleColor: tooltipText,
+                    bodyColor: tooltipText,
+                    borderColor: tooltipBorder,
                     borderWidth: 1,
                     displayColors: false,
                     callbacks: {
@@ -504,7 +630,7 @@ function renderChart(labels, data) {
                     beginAtZero: true,
                     max: 10,
                     grid: {
-                        color: '#33415550'
+                        color: chartGridColor
                     },
                     ticks: {
                         stepSize: 1
