@@ -1,14 +1,51 @@
 
 const DEFAULT_LAT = 36.1627;
 const DEFAULT_LON = -86.7816;
-const THEME_STORAGE_KEY = 'paincast_theme';
+const THEME_STORAGE_KEY = 'vaporcast_theme';
+const LEGACY_THEME_STORAGE_KEY = 'retrocast_theme';
+const LOCATION_STORAGE_KEY = 'vaporcast_location';
+const LEGACY_LOCATION_STORAGE_KEY = 'retrocast_location';
+const FORECAST_VIEW_STORAGE_KEY = 'vaporcast_forecast_view';
+const LEGACY_FORECAST_VIEW_STORAGE_KEY = 'retrocast_forecast_view';
 const THEME_ORDER = ['light', 'dark', 'retro', 'contrast'];
+const SUPPORTED_FORECAST_VIEWS = ['today', 'hourly', 'seven-day', 'insights', 'air-quality'];
 
 let currentChart = null;
 let chartState = null;
+let activeForecastView = 'today';
 
 const DAY_LABEL_FORMATTER = new Intl.DateTimeFormat([], { weekday: 'short' });
 const DAY_DATE_FORMATTER = new Intl.DateTimeFormat([], { month: 'short', day: 'numeric' });
+const WEATHER_CODE_MAP = {
+    0: { label: 'Clear Skies', icon: 'fa-sun' },
+    1: { label: 'Mostly Clear', icon: 'fa-sun' },
+    2: { label: 'Partly Cloudy', icon: 'fa-cloud-sun' },
+    3: { label: 'Overcast', icon: 'fa-cloud' },
+    45: { label: 'Foggy', icon: 'fa-smog' },
+    48: { label: 'Rime Fog', icon: 'fa-smog' },
+    51: { label: 'Light Drizzle', icon: 'fa-cloud-rain' },
+    53: { label: 'Drizzle', icon: 'fa-cloud-rain' },
+    55: { label: 'Dense Drizzle', icon: 'fa-cloud-rain' },
+    56: { label: 'Freezing Drizzle', icon: 'fa-cloud-meatball' },
+    57: { label: 'Heavy Freezing Drizzle', icon: 'fa-cloud-meatball' },
+    61: { label: 'Light Rain', icon: 'fa-cloud-rain' },
+    63: { label: 'Rain', icon: 'fa-cloud-showers-heavy' },
+    65: { label: 'Heavy Rain', icon: 'fa-cloud-showers-heavy' },
+    66: { label: 'Light Freezing Rain', icon: 'fa-cloud-meatball' },
+    67: { label: 'Freezing Rain', icon: 'fa-cloud-meatball' },
+    71: { label: 'Light Snow', icon: 'fa-snowflake' },
+    73: { label: 'Snow', icon: 'fa-snowflake' },
+    75: { label: 'Heavy Snow', icon: 'fa-snowflake' },
+    77: { label: 'Snow Grains', icon: 'fa-snowflake' },
+    80: { label: 'Rain Showers', icon: 'fa-cloud-sun-rain' },
+    81: { label: 'Strong Showers', icon: 'fa-cloud-showers-heavy' },
+    82: { label: 'Violent Showers', icon: 'fa-cloud-showers-heavy' },
+    85: { label: 'Snow Showers', icon: 'fa-cloud-snow' },
+    86: { label: 'Heavy Snow Showers', icon: 'fa-cloud-snow' },
+    95: { label: 'Thunderstorm', icon: 'fa-cloud-bolt' },
+    96: { label: 'Thunderstorm with Hail', icon: 'fa-cloud-bolt' },
+    99: { label: 'Severe Thunderstorm', icon: 'fa-cloud-bolt' }
+};
 
 const dom = {
     dashboard: document.getElementById('dashboard'),
@@ -34,10 +71,18 @@ const dom = {
     audioToggleIcon: document.getElementById('audio-toggle-icon'),
     audioToggleLabel: document.getElementById('audio-toggle-label'),
     retroAudio: document.getElementById('retro-audio'),
+    viewButtons: document.querySelectorAll('.forecast-view-btn'),
+    todaySection: document.getElementById('today-section'),
+    hourlySection: document.getElementById('hourly-section'),
+    sevenDaySection: document.getElementById('seven-day-section'),
+    insightsSection: document.getElementById('insights-section'),
+    airQualitySection: document.getElementById('air-quality-section'),
 
-    painIndexTitle: document.getElementById('pain-index-title'),
-    painValue: document.getElementById('pain-index-value'),
-    painLabel: document.getElementById('pain-index-label'),
+    currentConditionsTitle: document.getElementById('current-conditions-title'),
+    currentWeatherIcon: document.getElementById('current-weather-icon'),
+    currentTempValue: document.getElementById('current-temp-value'),
+    currentConditionLabel: document.getElementById('current-condition-label'),
+    currentFeelsLike: document.getElementById('current-feels-like'),
     indexGlow: document.getElementById('index-glow'),
 
     valTemp: document.getElementById('val-temp'),
@@ -45,10 +90,10 @@ const dom = {
     valPres: document.getElementById('val-pres'),
     valWind: document.getElementById('val-wind'),
 
-    factorTemp: document.getElementById('factor-temp'),
-    factorDelta: document.getElementById('factor-delta'),
-    factorPres: document.getElementById('factor-pres'),
-    factorHum: document.getElementById('factor-hum'),
+    insightUv: document.getElementById('insight-uv'),
+    insightAir: document.getElementById('insight-air'),
+    insightDew: document.getElementById('insight-dew'),
+    insightSun: document.getElementById('insight-sun'),
 
     chartCanvas: document.getElementById('forecast-chart'),
     weeklyOutlook: document.getElementById('weekly-outlook')
@@ -56,10 +101,15 @@ const dom = {
 
 function init() {
     setupEventListeners();
+    const savedForecastView = getStoredValue(FORECAST_VIEW_STORAGE_KEY, LEGACY_FORECAST_VIEW_STORAGE_KEY);
+    if (savedForecastView && SUPPORTED_FORECAST_VIEWS.includes(savedForecastView)) {
+        activeForecastView = savedForecastView;
+    }
+    setForecastView(activeForecastView);
     initTheme();
     initAudio();
 
-    const savedLoc = localStorage.getItem('paincast_location');
+    const savedLoc = localStorage.getItem(LOCATION_STORAGE_KEY);
     if (savedLoc) {
         const { lat, lon, manual, locationName } = JSON.parse(savedLoc);
         if (manual) {
@@ -70,6 +120,14 @@ function init() {
     } else {
         getGeolocation();
     }
+}
+
+function getStoredValue(primaryKey, legacyKey) {
+    const storedValue = localStorage.getItem(primaryKey) ?? localStorage.getItem(legacyKey);
+    if (storedValue !== null && storedValue !== undefined && localStorage.getItem(primaryKey) === null) {
+        localStorage.setItem(primaryKey, storedValue);
+    }
+    return storedValue;
 }
 
 function setupEventListeners() {
@@ -87,6 +145,49 @@ function setupEventListeners() {
     dom.themeOptions.forEach(option => {
         option.addEventListener('click', handleThemeSelect);
     });
+
+    dom.viewButtons.forEach(button => {
+        button.addEventListener('click', handleViewSwitch);
+    });
+}
+
+function handleViewSwitch(event) {
+    event.preventDefault();
+    const nextView = event.currentTarget.dataset.viewTarget;
+    setForecastView(nextView);
+}
+
+function setForecastView(view) {
+    const normalizedView = SUPPORTED_FORECAST_VIEWS.includes(view) ? view : 'today';
+    activeForecastView = normalizedView;
+    localStorage.setItem(FORECAST_VIEW_STORAGE_KEY, normalizedView);
+    localStorage.removeItem(LEGACY_FORECAST_VIEW_STORAGE_KEY);
+
+    dom.viewButtons.forEach(button => {
+        const isActive = button.dataset.viewTarget === normalizedView;
+        button.classList.toggle('active', isActive);
+        button.setAttribute('aria-current', isActive ? 'true' : 'false');
+    });
+
+    if (dom.todaySection) {
+        dom.todaySection.classList.toggle('d-none', normalizedView !== 'today');
+    }
+
+    if (dom.hourlySection) {
+        dom.hourlySection.classList.toggle('d-none', normalizedView !== 'hourly');
+    }
+
+    if (dom.sevenDaySection) {
+        dom.sevenDaySection.classList.toggle('d-none', normalizedView !== 'seven-day');
+    }
+
+    if (dom.insightsSection) {
+        dom.insightsSection.classList.toggle('d-none', normalizedView !== 'insights');
+    }
+
+    if (dom.airQualitySection) {
+        dom.airQualitySection.classList.toggle('d-none', normalizedView !== 'air-quality');
+    }
 }
 
 function toggleAudio() {
@@ -166,7 +267,7 @@ function handleDocumentKeydown(event) {
 }
 
 function initTheme() {
-    const savedTheme = localStorage.getItem(THEME_STORAGE_KEY);
+    const savedTheme = getStoredValue(THEME_STORAGE_KEY, LEGACY_THEME_STORAGE_KEY);
     // Default to 'retro' when no user preference is saved.
     const theme = THEME_ORDER.includes(savedTheme) ? savedTheme : 'retro';
 
@@ -181,10 +282,11 @@ function handleThemeSelect(event) {
 
     applyTheme(selectedTheme);
     localStorage.setItem(THEME_STORAGE_KEY, selectedTheme);
+    localStorage.removeItem(LEGACY_THEME_STORAGE_KEY);
     closeThemeDropdown();
 
     if (chartState) {
-        renderChart(chartState.labels, chartState.data);
+        renderChart(chartState.labels, chartState.data, chartState.conditionCodes || []);
     }
 }
 
@@ -216,7 +318,7 @@ function applyTheme(theme) {
 }
 
 function refreshData() {
-    const savedLoc = localStorage.getItem('paincast_location');
+    const savedLoc = getStoredValue(LOCATION_STORAGE_KEY, LEGACY_LOCATION_STORAGE_KEY);
     if (savedLoc) {
         const { lat, lon, locationName } = JSON.parse(savedLoc);
         fetchData(lat, lon, locationName);
@@ -248,7 +350,7 @@ function openModal() {
     dom.modalLocation.classList.remove('d-none');
     dom.locationContainer.classList.add('d-none');
 
-    const savedLoc = localStorage.getItem('paincast_location');
+    const savedLoc = getStoredValue(LOCATION_STORAGE_KEY, LEGACY_LOCATION_STORAGE_KEY);
     if (savedLoc) {
         const { locationName } = JSON.parse(savedLoc);
         dom.inputLocation.value = locationName || '';
@@ -280,11 +382,13 @@ function getGeolocation() {
                 const state = data.principalSubdivision ? `, ${data.principalSubdivision}` : "";
                 const locationName = city ? `${city}${state}` : "Local GPS";
 
-                localStorage.setItem('paincast_location', JSON.stringify({ lat, lon, manual: false, locationName }));
+                localStorage.setItem(LOCATION_STORAGE_KEY, JSON.stringify({ lat, lon, manual: false, locationName }));
+                localStorage.removeItem(LEGACY_LOCATION_STORAGE_KEY);
                 fetchData(lat, lon, locationName);
             } catch (e) {
                 const locationName = "Current Location";
-                localStorage.setItem('paincast_location', JSON.stringify({ lat, lon, manual: false, locationName }));
+                localStorage.setItem(LOCATION_STORAGE_KEY, JSON.stringify({ lat, lon, manual: false, locationName }));
+                localStorage.removeItem(LEGACY_LOCATION_STORAGE_KEY);
                 fetchData(lat, lon, locationName);
             }
         },
@@ -297,7 +401,7 @@ function getGeolocation() {
 }
 
 function handleLocationError(msg) {
-    const savedLoc = localStorage.getItem('paincast_location');
+    const savedLoc = getStoredValue(LOCATION_STORAGE_KEY, LEGACY_LOCATION_STORAGE_KEY);
     if (savedLoc) {
         const { lat, lon, locationName } = JSON.parse(savedLoc);
         fetchData(lat, lon, locationName || "Saved Location");
@@ -319,7 +423,7 @@ async function handleManualSubmit() {
 
         const geoUrl = `https://nominatim.openstreetmap.org/search?q=${encodeURIComponent(query)}&format=json&limit=1`;
         const res = await fetch(geoUrl, {
-            headers: { 'User-Agent': 'PainCastApp/1.0' }
+            headers: { 'User-Agent': 'VaporCastApp/1.0' }
         });
         const geoData = await res.json();
 
@@ -345,7 +449,8 @@ async function handleManualSubmit() {
             }
         }
 
-        localStorage.setItem('paincast_location', JSON.stringify({ lat, lon, manual: true, locationName }));
+        localStorage.setItem(LOCATION_STORAGE_KEY, JSON.stringify({ lat, lon, manual: true, locationName }));
+        localStorage.removeItem(LEGACY_LOCATION_STORAGE_KEY);
         closeModal();
         fetchData(lat, lon, locationName);
     } catch (e) {
@@ -363,22 +468,30 @@ async function fetchData(lat, lon, locationName) {
     showLoading();
     dom.locationDisplay.textContent = locationName || `GPS Coord: ${lat.toFixed(2)}, ${lon.toFixed(2)}`;
 
-    const url = `https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lon}&current=temperature_2m,relative_humidity_2m,pressure_msl,wind_speed_10m,precipitation_probability&hourly=pressure_msl,temperature_2m,relative_humidity_2m&temperature_unit=fahrenheit&timezone=auto`;
+    const weatherUrl = `https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lon}&current=temperature_2m,apparent_temperature,relative_humidity_2m,pressure_msl,wind_speed_10m,precipitation_probability,weather_code,uv_index,dew_point_2m&hourly=pressure_msl,temperature_2m,relative_humidity_2m,weather_code&daily=sunrise,sunset&temperature_unit=fahrenheit&timezone=auto`;
+    const airUrl = `https://air-quality-api.open-meteo.com/v1/air-quality?latitude=${lat}&longitude=${lon}&current=us_aqi`;
 
     try {
-        const response = await fetch(url);
-        if (!response.ok) throw new Error("Weather API Error");
-        const data = await response.json();
-        processWeatherData(data, locationName);
+        const [weatherResponse, airResponse] = await Promise.all([
+            fetch(weatherUrl),
+            fetch(airUrl)
+        ]);
+
+        if (!weatherResponse.ok) throw new Error('Weather API Error');
+
+        const weatherData = await weatherResponse.json();
+        const airData = airResponse.ok ? await airResponse.json() : null;
+
+        processWeatherData(weatherData, locationName, airData);
     } catch (err) {
         console.error(err);
         showError("Failed to fetch weather data. Please check your connection or coordinates.");
     }
 }
 
-// --- Algorithm ---
-function calculatePainFactorScores(temp, humidity, pressure, prevPressure) {
-    // 1. Temp score: colder than 59°F increases pain
+// --- Weather Scoring Algorithm ---
+function calculateWeatherImpactScores(temp, humidity, pressure, prevPressure) {
+    // 1. Temp score: colder than 59°F increases weather impact
     let temp_score = Math.max(0, (59 - temp) / 27);
 
     // 2. Humidity score: over 60% increases
@@ -397,24 +510,24 @@ function calculatePainFactorScores(temp, humidity, pressure, prevPressure) {
     return { temp_score, hum_score, bp_score, change_score, delta };
 }
 
-function calculateFinalIndex(scores) {
+function calculateImpactIndex(scores) {
     const raw = 0.4 * scores.temp_score +
         0.35 * scores.bp_score +
         0.15 * scores.hum_score +
         0.3 * scores.change_score;
 
-    const pain_index = Math.round(1 + 9 * Math.min(1, raw / 1.5));
-    return Math.max(1, Math.min(10, pain_index)); // ensure 1-10
+    const impactIndex = Math.round(1 + 9 * Math.min(1, raw / 1.5));
+    return Math.max(1, Math.min(10, impactIndex)); // ensure 1-10
 }
 
 function getStylesForIndex(index) {
-    if (index <= 3) return { text: 'pain-low', bg: 'glow-low', label: 'Low Impact' };
-    if (index <= 6) return { text: 'pain-med', bg: 'glow-med', label: 'Moderate Impact' };
-    return { text: 'pain-high', bg: 'glow-high', label: 'High Impact' };
+    if (index <= 3) return { text: 'impact-low', bg: 'glow-low', label: 'Low Impact' };
+    if (index <= 6) return { text: 'impact-med', bg: 'glow-med', label: 'Moderate Impact' };
+    return { text: 'impact-high', bg: 'glow-high', label: 'High Impact' };
 }
 
 // --- Data Processing & UI ---
-function processWeatherData(data, locationName) {
+function processWeatherData(data, locationName, airData) {
     const current = data.current;
     const hourly = data.hourly;
 
@@ -436,36 +549,30 @@ function processWeatherData(data, locationName) {
     }
 
     // Process Current
-    const currentScores = calculatePainFactorScores(
+    const currentScores = calculateWeatherImpactScores(
         current.temperature_2m,
         current.relative_humidity_2m,
         current.pressure_msl,
         prevPressure
     );
 
-    const currentIndexVal = calculateFinalIndex(currentScores);
-    updateDashboardUI(current, currentScores, currentIndexVal, locationName);
+    const currentIndexVal = calculateImpactIndex(currentScores);
+    updateDashboardUI(current, currentScores, currentIndexVal, locationName, data.daily, airData);
 
     // Process Forecast (Next 24 Hours)
-    const forecastData = [];
+    const forecastTemps = [];
+    const forecastCodes = [];
     const labels = [];
 
     for (let i = currentIndex; i < currentIndex + 24 && i < hourly.time.length; i++) {
-        const t = hourly.temperature_2m[i];
-        const h = hourly.relative_humidity_2m[i];
-        const p = hourly.pressure_msl[i];
-        const prevP = i > 0 ? hourly.pressure_msl[i - 1] : p;
-
-        const fScores = calculatePainFactorScores(t, h, p, prevP);
-        const fIndex = calculateFinalIndex(fScores);
-
-        forecastData.push(fIndex);
+        forecastTemps.push(Math.round(hourly.temperature_2m[i]));
+        forecastCodes.push(hourly.weather_code[i]);
 
         const dateObj = new Date(hourly.time[i]);
         labels.push(dateObj.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }));
     }
 
-    renderChart(labels, forecastData);
+    renderChart(labels, forecastTemps, forecastCodes);
     renderWeeklyOutlook(buildWeeklyOutlook(hourly, currentIndex));
     showDashboard();
 }
@@ -484,7 +591,8 @@ function buildWeeklyOutlook(hourly, startIndex) {
                 date,
                 temps: [],
                 humidity: [],
-                pressure: []
+                pressure: [],
+                weatherCodes: []
             };
             dayBuckets.push(bucket);
         }
@@ -492,6 +600,7 @@ function buildWeeklyOutlook(hourly, startIndex) {
         bucket.temps.push(hourly.temperature_2m[i]);
         bucket.humidity.push(hourly.relative_humidity_2m[i]);
         bucket.pressure.push(hourly.pressure_msl[i]);
+        bucket.weatherCodes.push(hourly.weather_code[i]);
 
         if (dayBuckets.length === 7 && i < hourly.time.length - 1) {
             const nextDay = hourly.time[i + 1].split('T')[0];
@@ -501,20 +610,16 @@ function buildWeeklyOutlook(hourly, startIndex) {
         }
     }
 
-    return dayBuckets.slice(0, 7).map((bucket, index, buckets) => {
-        const avgTemp = average(bucket.temps);
+    return dayBuckets.slice(0, 7).map(bucket => {
         const avgHumidity = average(bucket.humidity);
-        const avgPressure = average(bucket.pressure);
-        const prevAvgPressure = index > 0 ? average(buckets[index - 1].pressure) : avgPressure;
-        const scores = calculatePainFactorScores(avgTemp, avgHumidity, avgPressure, prevAvgPressure);
-        const painIndex = calculateFinalIndex(scores);
-        const styles = getStylesForIndex(painIndex);
+        const dominantCode = getDominantWeatherCode(bucket.weatherCodes);
+        const weather = getWeatherPresentation(dominantCode);
 
         return {
             dayLabel: DAY_LABEL_FORMATTER.format(bucket.date),
             dateLabel: DAY_DATE_FORMATTER.format(bucket.date),
-            painIndex,
-            label: styles.label,
+            conditionLabel: weather.label,
+            weatherIcon: weather.icon,
             tempLow: Math.round(Math.min(...bucket.temps)),
             tempHigh: Math.round(Math.max(...bucket.temps)),
             avgHumidity: Math.round(avgHumidity)
@@ -531,11 +636,53 @@ function average(values) {
     return total / values.length;
 }
 
-function updateDashboardUI(current, scores, index, locationName) {
+function getDominantWeatherCode(codes) {
+    if (!codes || !codes.length) {
+        return 2;
+    }
+
+    const counts = new Map();
+    for (const code of codes) {
+        counts.set(code, (counts.get(code) || 0) + 1);
+    }
+
+    let topCode = codes[0];
+    let topCount = 0;
+    for (const [code, count] of counts.entries()) {
+        if (count > topCount) {
+            topCode = code;
+            topCount = count;
+        }
+    }
+
+    return topCode;
+}
+
+function getWeatherPresentation(weatherCode) {
+    const fallback = { label: 'Current Conditions', icon: 'fa-cloud-sun' };
+    return WEATHER_CODE_MAP[weatherCode] || fallback;
+}
+
+function getAqiLabel(aqiValue) {
+    if (aqiValue <= 50) return 'Good';
+    if (aqiValue <= 100) return 'Moderate';
+    if (aqiValue <= 150) return 'Unhealthy SG';
+    if (aqiValue <= 200) return 'Unhealthy';
+    if (aqiValue <= 300) return 'Very Unhealthy';
+    return 'Hazardous';
+}
+
+function formatLocalTime(isoValue) {
+    if (!isoValue) return '--';
+    const date = new Date(isoValue);
+    return date.toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' });
+}
+
+function updateDashboardUI(current, scores, index, locationName, daily, airData) {
     if (locationName) {
-        dom.painIndexTitle.textContent = `Pain Index for ${locationName}`;
+        dom.currentConditionsTitle.textContent = `Current Conditions in ${locationName}`;
     } else {
-        dom.painIndexTitle.textContent = `Current Pain Index`;
+        dom.currentConditionsTitle.textContent = 'Current Conditions';
     }
 
     // Current weather
@@ -544,31 +691,40 @@ function updateDashboardUI(current, scores, index, locationName) {
     dom.valPres.textContent = `${Math.round(current.pressure_msl)} hPa`;
     dom.valWind.textContent = `${Math.round(current.wind_speed_10m)} km/h`;
 
-    // Scores (formatted out of 10 roughly for comparison, or just raw numbers)
-    dom.factorTemp.textContent = (scores.temp_score).toFixed(2);
-    dom.factorHum.textContent = (scores.hum_score).toFixed(2);
-    dom.factorPres.textContent = (scores.bp_score).toFixed(2);
+    const weatherPresentation = getWeatherPresentation(current.weather_code);
+    dom.currentWeatherIcon.className = `fa-solid ${weatherPresentation.icon} fs-1 mb-2 position-relative text-primary-light`;
+    dom.currentTempValue.textContent = Math.round(current.temperature_2m);
+    dom.currentConditionLabel.textContent = weatherPresentation.label;
+    dom.currentFeelsLike.textContent = `Feels like ${Math.round(current.apparent_temperature)}°F`;
 
-    const deltaPrefix = scores.delta > 0 ? '+' : '';
-    dom.factorDelta.textContent = `${deltaPrefix}${scores.delta.toFixed(1)} hPa`;
+    // Weather Insights
+    dom.insightUv.textContent = current.uv_index !== undefined && current.uv_index !== null
+        ? Number(current.uv_index).toFixed(1)
+        : '--';
 
-    // Main Index
-    dom.painValue.textContent = index;
+    dom.insightDew.textContent = current.dew_point_2m !== undefined && current.dew_point_2m !== null
+        ? `${Math.round(current.dew_point_2m)}°F`
+        : '--';
 
-    // Clear old classes
-    dom.painValue.classList.remove('pain-low', 'pain-med', 'pain-high');
+    const sunrise = daily && daily.sunrise && daily.sunrise.length ? daily.sunrise[0] : null;
+    const sunset = daily && daily.sunset && daily.sunset.length ? daily.sunset[0] : null;
+    dom.insightSun.textContent = `${formatLocalTime(sunrise)} / ${formatLocalTime(sunset)}`;
+
+    const aqi = airData && airData.current ? airData.current.us_aqi : null;
+    dom.insightAir.textContent = aqi !== null && aqi !== undefined
+        ? `${Math.round(aqi)} (${getAqiLabel(aqi)})`
+        : 'Unavailable';
+
+    // Keep glow behavior tied to weather volatility score tiers.
     dom.indexGlow.classList.remove('glow-low', 'glow-med', 'glow-high');
-
     const styles = getStylesForIndex(index);
-    dom.painValue.classList.add(styles.text);
     dom.indexGlow.classList.add(styles.bg);
-    dom.painLabel.textContent = styles.label;
-    dom.painLabel.className = `text-xl font-medium relative z-10 transition-colors duration-500 ${styles.text}`;
 }
 
 function renderWeeklyOutlook(days) {
     dom.weeklyOutlook.innerHTML = days.map(day => {
-        const toneClass = day.painIndex <= 3 ? 'weekly-card-low' : day.painIndex <= 6 ? 'weekly-card-med' : 'weekly-card-high';
+        const avgTemp = (day.tempHigh + day.tempLow) / 2;
+        const toneClass = avgTemp <= 50 ? 'weekly-card-low' : avgTemp <= 75 ? 'weekly-card-med' : 'weekly-card-high';
 
         return `
             <article class="weekly-card ${toneClass}">
@@ -578,13 +734,12 @@ function renderWeeklyOutlook(days) {
                         <p class="weekly-card-date mb-0">${day.dateLabel}</p>
                     </div>
                     <div class="weekly-card-index-wrap text-end">
-                        <p class="weekly-card-index mb-0">${day.painIndex}<span>/10</span></p>
-                        <p class="weekly-card-label mb-0">${day.label}</p>
+                        <i class="fa-solid ${day.weatherIcon} fs-3 text-primary-light"></i>
                     </div>
                 </div>
                 <div class="weekly-card-meta">
-                    <span>${day.tempLow}° to ${day.tempHigh}°F</span>
-                    <span>${day.avgHumidity}% humidity</span>
+                    <span>High ${day.tempHigh}°F / Low ${day.tempLow}°F</span>
+                    <span class="weekly-card-label">${day.conditionLabel}</span>
                 </div>
             </article>
         `;
@@ -592,10 +747,11 @@ function renderWeeklyOutlook(days) {
 }
 
 // --- Chart.js ---
-function renderChart(labels, data) {
+function renderChart(labels, data, conditionCodes = []) {
     chartState = {
         labels: [...labels],
-        data: [...data]
+        data: [...data],
+        conditionCodes: [...conditionCodes]
     };
 
     if (currentChart) {
@@ -619,11 +775,11 @@ function renderChart(labels, data) {
     const tooltipText = isRetroTheme ? '#fff7d4' : isContrastTheme ? '#ffffff' : isDarkLikeTheme ? '#dbe9f6' : '#1e293b';
     const tooltipBorder = isRetroTheme ? '#ffe48a' : isContrastTheme ? '#ffffff' : isDarkLikeTheme ? '#385061' : '#cbd5e1';
     const barColors = isRetroTheme
-        ? { low: '#6de4d6cc', mid: '#ffd36ecc', high: '#ff8c8ccc' }
-        : { low: '#22c55e80', mid: '#f59e0b80', high: '#ef444480' };
+        ? { cool: '#6de4d6cc', mild: '#ffd36ecc', warm: '#ff8c8ccc' }
+        : { cool: '#22c55e80', mild: '#f59e0b80', warm: '#ef444480' };
     const barBorders = isRetroTheme
-        ? { low: '#6de4d6', mid: '#ffd36e', high: '#ff8c8c' }
-        : { low: '#22c55e', mid: '#f59e0b', high: '#ef4444' };
+        ? { cool: '#6de4d6', mild: '#ffd36e', warm: '#ff8c8c' }
+        : { cool: '#22c55e', mild: '#f59e0b', warm: '#ef4444' };
 
     const ctx = dom.chartCanvas.getContext('2d');
 
@@ -635,17 +791,17 @@ function renderChart(labels, data) {
         data: {
             labels: labels,
             datasets: [{
-                label: 'Pain Index',
+                label: 'Temperature',
                 data: data,
                 backgroundColor: data.map(val => {
-                    if (val <= 3) return barColors.low;
-                    if (val <= 6) return barColors.mid;
-                    return barColors.high;
+                    if (val <= 50) return barColors.cool;
+                    if (val <= 75) return barColors.mild;
+                    return barColors.warm;
                 }),
                 borderColor: data.map(val => {
-                    if (val <= 3) return barBorders.low;
-                    if (val <= 6) return barBorders.mid;
-                    return barBorders.high;
+                    if (val <= 50) return barBorders.cool;
+                    if (val <= 75) return barBorders.mild;
+                    return barBorders.warm;
                 }),
                 borderWidth: 1,
                 borderRadius: 4
@@ -667,20 +823,25 @@ function renderChart(labels, data) {
                     displayColors: false,
                     callbacks: {
                         label: function (context) {
-                            return `Index: ${context.parsed.y} / 10`;
+                            return `Temp: ${context.parsed.y}°F`;
+                        },
+                        afterLabel: function (context) {
+                            const weather = getWeatherPresentation(conditionCodes[context.dataIndex]);
+                            return `Condition: ${weather.label}`;
                         }
                     }
                 }
             },
             scales: {
                 y: {
-                    beginAtZero: true,
-                    max: 10,
+                    beginAtZero: false,
                     grid: {
                         color: chartGridColor
                     },
                     ticks: {
-                        stepSize: 1
+                        callback: function (value) {
+                            return `${value}°`;
+                        }
                     }
                 },
                 x: {
