@@ -2,7 +2,7 @@
 const DEFAULT_LAT = 36.1627;
 const DEFAULT_LON = -86.7816;
 const THEME_STORAGE_KEY = 'paincast_theme';
-const THEME_ORDER = ['light', 'dark', 'contrast'];
+const THEME_ORDER = ['light', 'dark', 'retro', 'contrast'];
 
 let currentChart = null;
 let chartState = null;
@@ -152,6 +152,7 @@ function applyTheme(theme) {
     const toggleMap = {
         light: { label: 'Theme: Light', icon: 'fa-sun' },
         dark: { label: 'Theme: Dark', icon: 'fa-moon' },
+        retro: { label: 'Theme: Retro', icon: 'fa-tv' },
         contrast: { label: 'Theme: High Contrast', icon: 'fa-circle-half-stroke' }
     };
 
@@ -561,35 +562,32 @@ function renderChart(labels, data) {
     }
 
     // Chart colors based on values
-    const backgroundColors = data.map(val => {
-        if (val <= 3) return '#22c55e80';
-        if (val <= 6) return '#f59e0b80';
-        return '#ef444480';
-    });
-
-    const borderColors = data.map(val => {
-        if (val <= 3) return '#22c55e';
-        if (val <= 6) return '#f59e0b';
-        return '#ef4444';
-    });
-
     const activeTheme = document.body.dataset.theme || 'light';
+    const isRetroTheme = activeTheme === 'retro';
     const isDarkLikeTheme = activeTheme === 'dark' || activeTheme === 'contrast';
     const isContrastTheme = activeTheme === 'contrast';
-    const chartTextColor = isContrastTheme ? '#ffffff' : isDarkLikeTheme ? '#b8c6d4' : '#475569';
-    const chartGridColor = isContrastTheme ? '#ffffff66' : isDarkLikeTheme ? '#5872864d' : '#33415550';
-    const tooltipBg = isContrastTheme
+    const chartTextColor = isContrastTheme ? '#ffffff' : isRetroTheme ? '#f7f1d8' : isDarkLikeTheme ? '#b8c6d4' : '#475569';
+    const chartGridColor = isContrastTheme ? '#ffffff66' : isRetroTheme ? '#b8c5ff55' : isDarkLikeTheme ? '#5872864d' : '#33415550';
+    const tooltipBg = isRetroTheme
+        ? 'rgba(44, 58, 109, 0.98)'
+        : isContrastTheme
         ? 'rgba(0, 0, 0, 1)'
         : isDarkLikeTheme
             ? 'rgba(14, 24, 31, 0.96)'
             : 'rgba(255, 255, 255, 0.9)';
-    const tooltipText = isContrastTheme ? '#ffffff' : isDarkLikeTheme ? '#dbe9f6' : '#1e293b';
-    const tooltipBorder = isContrastTheme ? '#ffffff' : isDarkLikeTheme ? '#385061' : '#cbd5e1';
+    const tooltipText = isRetroTheme ? '#fff7d4' : isContrastTheme ? '#ffffff' : isDarkLikeTheme ? '#dbe9f6' : '#1e293b';
+    const tooltipBorder = isRetroTheme ? '#ffe48a' : isContrastTheme ? '#ffffff' : isDarkLikeTheme ? '#385061' : '#cbd5e1';
+    const barColors = isRetroTheme
+        ? { low: '#6de4d6cc', mid: '#ffd36ecc', high: '#ff8c8ccc' }
+        : { low: '#22c55e80', mid: '#f59e0b80', high: '#ef444480' };
+    const barBorders = isRetroTheme
+        ? { low: '#6de4d6', mid: '#ffd36e', high: '#ff8c8c' }
+        : { low: '#22c55e', mid: '#f59e0b', high: '#ef4444' };
 
     const ctx = dom.chartCanvas.getContext('2d');
 
     Chart.defaults.color = chartTextColor;
-    Chart.defaults.font.family = "'Inter', sans-serif";
+    Chart.defaults.font.family = isRetroTheme ? "'IBM Plex Mono', monospace" : "'Inter', sans-serif";
 
     currentChart = new Chart(ctx, {
         type: 'bar',
@@ -598,8 +596,16 @@ function renderChart(labels, data) {
             datasets: [{
                 label: 'Pain Index',
                 data: data,
-                backgroundColor: backgroundColors,
-                borderColor: borderColors,
+                backgroundColor: data.map(val => {
+                    if (val <= 3) return barColors.low;
+                    if (val <= 6) return barColors.mid;
+                    return barColors.high;
+                }),
+                borderColor: data.map(val => {
+                    if (val <= 3) return barBorders.low;
+                    if (val <= 6) return barBorders.mid;
+                    return barBorders.high;
+                }),
                 borderWidth: 1,
                 borderRadius: 4
             }]

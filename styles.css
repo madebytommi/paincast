@@ -2,6 +2,7 @@
 body {
     font-family: 'Inter', sans-serif;
     overflow-x: hidden;
+    position: relative;
     background-color: var(--bg-main) !important;
     background-image: radial-gradient(circle at top right, rgba(0, 205, 0, 0.05), transparent 400px),
         radial-gradient(circle at bottom left, rgba(0, 168, 0, 0.05), transparent 400px);
@@ -62,6 +63,227 @@ body[data-theme='contrast'] {
     --c-purple: #00ffff;
     --c-indigo: #00ff66;
     --c-blue: #ff7b00;
+}
+
+body[data-theme='retro'] {
+    --bg-main: #2f235f;
+    --card-bg: rgba(71, 94, 155, 0.82);
+    --card-border: rgba(228, 233, 255, 0.28);
+    --surface-strong: #4a5f9b;
+    --surface-muted: #31467d;
+    --surface-shadow: rgba(16, 12, 38, 0.45);
+
+    --text-primary: #f7f3e5;
+    --text-secondary: #f1db76;
+    --text-tertiary: #c8d2ef;
+    --text-soft: #ffffff;
+    --text-subtle: #bfd0f1;
+
+    --c-pink: #ff7f7f;
+    --c-purple: #f4df76;
+    --c-indigo: #7dd3fc;
+    --c-blue: #4f9cff;
+
+    background-color: #2f235f !important;
+    background-image:
+        radial-gradient(circle at 50% 0%, rgba(255, 214, 102, 0.32), transparent 32%),
+        radial-gradient(circle at 0% 100%, rgba(255, 140, 90, 0.32), transparent 34%),
+        linear-gradient(180deg, #4a2f84 0%, #5b4a97 22%, #6e4f7f 52%, #df8958 100%) !important;
+    font-family: 'IBM Plex Mono', monospace;
+}
+
+body[data-theme='retro']::before,
+body[data-theme='retro']::after {
+    content: '';
+    position: fixed;
+    inset: 0;
+    pointer-events: none;
+    z-index: 0;
+}
+
+body[data-theme='retro']::before {
+    background-image: linear-gradient(rgba(255, 255, 255, 0.04) 1px, transparent 1px);
+    background-size: 100% 4px;
+    opacity: 0.28;
+    mix-blend-mode: soft-light;
+}
+
+body[data-theme='retro']::after {
+    background: radial-gradient(circle at 50% 8%, rgba(255, 220, 160, 0.22), transparent 30%),
+        radial-gradient(circle at 15% 18%, rgba(130, 227, 255, 0.12), transparent 26%);
+    filter: blur(1px);
+    opacity: 0.9;
+}
+
+body[data-theme='retro'] > * {
+    position: relative;
+    z-index: 1;
+}
+
+body[data-theme='retro'] .text-gradient {
+    background: linear-gradient(90deg, #fff275, #ffd36a 48%, #7de1ff 100%);
+    text-shadow: 0 0 14px rgba(255, 255, 160, 0.35);
+}
+
+body[data-theme='retro'] .text-gradient,
+body[data-theme='retro'] .weekly-card-day,
+body[data-theme='retro'] .weekly-card-index,
+body[data-theme='retro'] .weekly-card-label,
+body[data-theme='retro'] #pain-index-title,
+body[data-theme='retro'] #pain-index-label {
+    letter-spacing: 0.04em;
+    text-shadow: 0 2px 0 rgba(25, 22, 54, 0.9), 0 0 12px rgba(255, 244, 180, 0.16);
+}
+
+body[data-theme='retro'] .glass-card,
+body[data-theme='retro'] .bg-slate-800,
+body[data-theme='retro'] .modal-surface,
+body[data-theme='retro'] .weekly-card,
+body[data-theme='retro'] .btn-slate-700,
+body[data-theme='retro'] .theme-dropdown-menu,
+body[data-theme='retro'] .bg-slate-900:not(body) {
+    box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.22), 0 18px 28px rgba(24, 18, 54, 0.35);
+}
+
+body[data-theme='retro'] .glass-card,
+body[data-theme='retro'] .bg-slate-800,
+body[data-theme='retro'] .modal-surface {
+    background: linear-gradient(180deg, rgba(92, 117, 177, 0.9), rgba(63, 86, 148, 0.94)) !important;
+    border-color: rgba(227, 232, 255, 0.28) !important;
+}
+
+body[data-theme='retro'] .bg-slate-900:not(body) {
+    background: linear-gradient(180deg, rgba(44, 61, 117, 0.95), rgba(32, 47, 98, 0.96)) !important;
+    border-color: rgba(207, 220, 255, 0.18) !important;
+}
+
+body[data-theme='retro'] .btn-slate-700 {
+    background: linear-gradient(180deg, rgba(255, 228, 131, 0.92), rgba(233, 159, 80, 0.92));
+    color: #2f235f;
+    border-color: rgba(255, 245, 209, 0.35);
+}
+
+body[data-theme='retro'] .btn-slate-700:hover {
+    background: linear-gradient(180deg, rgba(255, 244, 160, 0.98), rgba(249, 175, 98, 0.98));
+    color: #1f173f;
+    border-color: rgba(255, 247, 216, 0.6);
+}
+
+body[data-theme='retro'] .btn-primary {
+    background: linear-gradient(180deg, #77d6ff, #3f8ff0) !important;
+    border-color: #7adfff !important;
+    color: #091124 !important;
+}
+
+body[data-theme='retro'] .btn-primary:hover {
+    background: linear-gradient(180deg, #9be8ff, #5ba5ff) !important;
+    border-color: #b7efff !important;
+}
+
+body[data-theme='retro'] .theme-dropdown-menu .dropdown-item.active,
+body[data-theme='retro'] .theme-dropdown-menu .dropdown-item:active {
+    background: linear-gradient(180deg, #fff08a, #f6be5f);
+    color: #2f235f;
+}
+
+body[data-theme='retro'] .pain-index-card {
+    background: linear-gradient(180deg, rgba(83, 100, 161, 0.98), rgba(53, 75, 138, 0.98)) !important;
+    border: 1px solid rgba(255, 245, 210, 0.18);
+    box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.2), 0 18px 34px rgba(21, 15, 45, 0.42);
+}
+
+body[data-theme='retro'] #index-glow {
+    background: radial-gradient(circle at center, rgba(255, 237, 156, 0.28) 0%, transparent 70%);
+}
+
+body[data-theme='retro'] #pain-index-value {
+    color: #fff4c7;
+    text-shadow: 0 0 18px rgba(255, 236, 157, 0.28);
+}
+
+body[data-theme='retro'] #pain-index-label {
+    color: #fff0ae;
+}
+
+body[data-theme='retro'] .icon-circle-blue {
+    background-color: rgba(118, 220, 255, 0.18);
+    color: #8fe7ff;
+}
+
+body[data-theme='retro'] .icon-circle-purple {
+    background-color: rgba(255, 225, 128, 0.2);
+    color: #ffe58d;
+}
+
+body[data-theme='retro'] .icon-circle-indigo {
+    background-color: rgba(141, 204, 255, 0.16);
+    color: #b4e0ff;
+}
+
+body[data-theme='retro'] .icon-circle-cyan {
+    background-color: rgba(255, 132, 132, 0.16);
+    color: #ff9f9f;
+}
+
+body[data-theme='retro'] .weekly-card {
+    background: linear-gradient(180deg, rgba(74, 92, 150, 0.96), rgba(47, 66, 122, 0.96));
+    border-color: rgba(255, 245, 215, 0.2);
+}
+
+body[data-theme='retro'] .weekly-card-low {
+    box-shadow: inset 0 0 0 1px rgba(109, 228, 216, 0.32), 0 12px 30px rgba(15, 23, 42, 0.08);
+}
+
+body[data-theme='retro'] .weekly-card-med {
+    box-shadow: inset 0 0 0 1px rgba(255, 213, 112, 0.34), 0 12px 30px rgba(15, 23, 42, 0.08);
+}
+
+body[data-theme='retro'] .weekly-card-high {
+    box-shadow: inset 0 0 0 1px rgba(255, 140, 140, 0.34), 0 12px 30px rgba(15, 23, 42, 0.08);
+}
+
+body[data-theme='retro'] .weekly-card-date,
+body[data-theme='retro'] .weekly-card-meta,
+body[data-theme='retro'] .weekly-card-label,
+body[data-theme='retro'] .text-slate-400,
+body[data-theme='retro'] .text-slate-500,
+body[data-theme='retro'] .text-slate-600,
+body[data-theme='retro'] footer,
+body[data-theme='retro'] footer a {
+    color: #d9e0ff !important;
+}
+
+body[data-theme='retro'] .form-control {
+    background: rgba(35, 47, 98, 0.92) !important;
+    color: #fff8e1 !important;
+}
+
+body[data-theme='retro'] .form-control:focus {
+    border-color: #ffe48a !important;
+    box-shadow: 0 0 0 0.25rem rgba(255, 228, 138, 0.24) !important;
+}
+
+body[data-theme='retro'] .custom-spinner {
+    color: #ffe77d !important;
+}
+
+body[data-theme='retro'] #dashboard > div {
+    box-shadow: 0 0 0 1px rgba(255, 236, 165, 0.2);
+}
+
+body[data-theme='retro'] .hover-text-dark:hover,
+body[data-theme='retro'] .text-decoration-underline:hover {
+    color: #fff6c7 !important;
+}
+
+body[data-theme='retro'] .text-danger-light,
+body[data-theme='retro'] .text-danger-lighter {
+    color: #ffdf8c !important;
+}
+
+body[data-theme='retro'] .error-card {
+    background-color: rgba(255, 210, 128, 0.12) !important;
+    border-color: rgba(255, 228, 138, 0.28) !important;
 }
 
 .bg-slate-900 {
