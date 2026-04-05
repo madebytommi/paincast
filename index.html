@@ -4,15 +4,13 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>VaporCast - Your Retro Weather Dashboard</title>
-    <meta name="description" content="VaporCast is a clean retro-style weather dashboard for current conditions, hourly trends, 7-day forecasts, and practical weather insights.">
+    <title>PainCast - Daily Chronic Pain Index</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet"
         integrity="sha384-QWTKZyjpPEjISv5WaRU9OFeRpok6YctnYmDr5pNlyT2bRjXh0JMhjY6hW+ALEwIH" crossorigin="anonymous">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
     <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
-    <link href="https://fonts.googleapis.com/css2?family=Audiowide&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="styles.css">
 </head>
 
@@ -37,30 +35,20 @@
                 <span id="audio-toggle-label">Music</span>
             </button>
         </div>
-        <h1 class="display-5 fw-bold text-gradient logo-font mb-0">
-            <i class="fa-solid fa-cloud-bolt me-2"></i>VaporCast
+        <h1 class="display-5 fw-bold text-gradient mb-0">
+            <i class="fa-solid fa-cloud-bolt me-2"></i>PainCast
         </h1>
-        <p class="text-slate-400 mt-2">Friendly forecasts with a retro-futuristic twist</p>
+        <p class="text-slate-400 mt-2">Helping you turn weather into your ally, one forecast at a time</p>
     </header>
 
     <section class="hero-blurb text-center px-3 mb-2">
         <p class="text-slate-300 fs-5 lh-lg max-w-md mx-auto mb-2">
-            Welcome to <span class="text-gradient fw-semibold">VaporCast</span> - your daily weather companion with for every kind of day.
+            Welcome to <span class="text-gradient fw-semibold">PainCast</span> - your daily weather companion for chronic pain.
         </p>
         <p class="text-slate-400 mb-0 max-w-lg mx-auto">
-            Check current conditions, hourly forecasts, 7-day forecasts, and weather insights in one beautiful dashboard designed to help you plan with confidence.
+            We turn temperature, pressure, and humidity into a simple 0-10 pain forecast so you can plan your day with confidence instead of surprise flares.
         </p>
     </section>
-
-    <nav class="w-100 max-w-4xl px-3 mb-3">
-        <div class="glass-card rounded-4 p-2 d-flex flex-wrap justify-content-center gap-2 custom-transition">
-            <a href="#" id="btn-view-today" data-view-target="today" class="btn btn-sm btn-slate-700 text-light rounded-3 custom-transition forecast-view-btn active" aria-current="true">Today</a>
-            <a href="#" id="btn-view-hourly" data-view-target="hourly" class="btn btn-sm btn-slate-700 text-light rounded-3 custom-transition forecast-view-btn">Hourly</a>
-            <a href="#" id="btn-view-seven-day" data-view-target="seven-day" class="btn btn-sm btn-slate-700 text-light rounded-3 custom-transition forecast-view-btn">7-Day</a>
-            <a href="#" id="btn-view-insights" data-view-target="insights" class="btn btn-sm btn-slate-700 text-light rounded-3 custom-transition forecast-view-btn">Insights</a>
-            <a href="#" id="btn-view-air-quality" data-view-target="air-quality" class="btn btn-sm btn-slate-700 text-light rounded-3 custom-transition forecast-view-btn">Air Quality</a>
-        </div>
-    </nav>
 
     <main class="w-100 max-w-4xl px-3 flex-grow-1 d-flex flex-column align-items-center gap-4">
 
@@ -121,39 +109,37 @@
         <!-- Main Dashboard (Hidden while loading) -->
         <div id="dashboard" class="d-none w-100 d-flex flex-column gap-4 animate-fade-in">
 
-            <section id="today-section" class="d-flex flex-column gap-4">
-            <!-- Top Section: Current Conditions + Current Weather -->
+            <!-- Top Section: Pain Index + Current Weather -->
             <div class="row g-4">
 
-                <!-- Current Conditions Display -->
+                <!-- Pain Index Display -->
                 <div class="col-md-6">
                     <div
-                        class="h-100 bg-slate-800 border-slate-700 rounded-4 p-4 d-flex flex-column align-items-center justify-content-center text-center shadow-lg position-relative overflow-hidden current-conditions-card">
+                        class="h-100 bg-slate-800 border-slate-700 rounded-4 p-4 d-flex flex-column align-items-center justify-content-center text-center shadow-lg position-relative overflow-hidden pain-index-card">
                         <div id="index-glow"
                             class="position-absolute w-100 h-100 top-0 start-0 opacity-25 custom-transition"
                             style="z-index: 0;"></div>
-                        <h2 id="current-conditions-title"
+                        <h2 id="pain-index-title"
                             class="text-slate-400 fw-semibold mb-2 position-relative text-uppercase tracking-widest small"
                             style="z-index: 1;">
-                            Current Conditions</h2>
-                        <i id="current-weather-icon" class="fa-solid fa-cloud-sun fs-1 mb-2 position-relative text-primary-light" style="z-index: 1;"></i>
+                            Current Pain Index</h2>
                         <div class="d-flex align-items-baseline justify-content-center gap-2 position-relative mb-2"
                             style="z-index: 1;">
-                            <span id="current-temp-value"
+                            <span id="pain-index-value"
                                 class="display-1 fw-bold tabular-nums custom-transition">--</span>
-                            <span class="fs-4 fw-bold text-slate-500">°F</span>
+                            <span class="fs-4 fw-bold text-slate-500">/ 10</span>
                         </div>
-                        <p id="current-condition-label" class="fs-5 fw-medium position-relative custom-transition mb-1 text-gradient"
+                        <p id="pain-index-label" class="fs-5 fw-medium position-relative custom-transition mb-1"
                             style="z-index: 1;">
                             Loading...</p>
-                        <p id="current-feels-like"
+                        <p id="pain-index-desc"
                             class="small text-slate-400 mt-2 position-relative mx-auto max-w-250 mb-0"
                             style="z-index: 1;">
-                            Feels like --°F
+                            Calculated based on temperature, pressure, and humidity.
                         </p>
                         <p class="small text-slate-400 mt-3 position-relative mx-auto max-w-250 mb-0"
                             style="z-index: 1;">
-                            You've got this. A quick forecast check is a smart start to any day.
+                            💙 You're not alone in this. Knowledge is your superpower today.
                         </p>
                     </div>
                 </div>
@@ -202,98 +188,97 @@
                 </div>
 
             </div>
-            </section>
 
-            <!-- Weather Insights -->
-            <section id="insights-section" class="bg-slate-800 border-slate-700 rounded-4 p-4 shadow-lg d-none">
+            <!-- Contribution Breakdown -->
+            <div class="bg-slate-800 border-slate-700 rounded-4 p-4 shadow-lg">
                 <h2
                     class="text-slate-400 fw-semibold mb-3 text-uppercase tracking-widest small border-bottom border-slate-700 pb-2">
-                    Weather Insights</h2>
+                    Index Factors</h2>
                 <div class="d-flex flex-column gap-3">
                     <div class="d-flex align-items-center justify-content-between">
                         <div class="d-flex align-items-center gap-3">
                             <div class="icon-circle icon-circle-blue">
-                                <i class="fa-solid fa-sun"></i>
+                                <i class="fa-solid fa-temperature-arrow-down"></i>
                             </div>
                             <div>
-                                <p class="fw-medium text-light mb-0">UV Index</p>
-                                <p class="small text-slate-500 mb-0" style="font-size: 0.75rem;">Current ultraviolet intensity</p>
+                                <p class="fw-medium text-light mb-0">Cold Temperature</p>
+                                <p class="small text-slate-500 mb-0" style="font-size: 0.75rem;">Colder than 59°F
+                                    increases joint stiffness</p>
                             </div>
                         </div>
-                        <span id="insight-uv" class="fw-bold font-monospace bg-slate-900 px-2 py-1 rounded-2">--</span>
+                        <span id="factor-temp" class="fw-bold font-monospace bg-slate-900 px-2 py-1 rounded-2">--</span>
+                    </div>
+
+                    <div class="d-flex align-items-center justify-content-between">
+                        <div class="d-flex align-items-center gap-3">
+                            <div class="icon-circle icon-circle-purple">
+                                <i class="fa-solid fa-arrow-right-arrow-left"></i>
+                            </div>
+                            <div>
+                                <p class="fw-medium text-light mb-0">Barometric Change</p>
+                                <p class="small text-slate-500 mb-0" style="font-size: 0.75rem;">Pressure shifts past 1
+                                    hour</p>
+                            </div>
+                        </div>
+                        <span id="factor-delta"
+                            class="fw-bold font-monospace bg-slate-900 px-2 py-1 rounded-2">--</span>
                     </div>
 
                     <div class="d-flex align-items-center justify-content-between">
                         <div class="d-flex align-items-center gap-3">
                             <div class="icon-circle icon-circle-indigo">
-                                <i class="fa-solid fa-cloud-rain"></i>
+                                <i class="fa-solid fa-weight-hanging"></i>
                             </div>
                             <div>
-                                <p class="fw-medium text-light mb-0">Dew Point</p>
-                                <p class="small text-slate-500 mb-0" style="font-size: 0.75rem;">How humid the air feels</p>
+                                <p class="fw-medium text-light mb-0">High Pressure Level</p>
+                                <p class="small text-slate-500 mb-0" style="font-size: 0.75rem;">Base level above 1005
+                                    hPa</p>
                             </div>
                         </div>
-                        <span id="insight-dew" class="fw-bold font-monospace bg-slate-900 px-2 py-1 rounded-2">--</span>
+                        <span id="factor-pres" class="fw-bold font-monospace bg-slate-900 px-2 py-1 rounded-2">--</span>
                     </div>
 
                     <div class="d-flex align-items-center justify-content-between">
                         <div class="d-flex align-items-center gap-3">
                             <div class="icon-circle icon-circle-cyan">
-                                <i class="fa-solid fa-clock"></i>
+                                <i class="fa-solid fa-droplet"></i>
                             </div>
                             <div>
-                                <p class="fw-medium text-light mb-0">Sunrise / Sunset</p>
-                                <p class="small text-slate-500 mb-0" style="font-size: 0.75rem;">Today's daylight window</p>
+                                <p class="fw-medium text-light mb-0">High Humidity</p>
+                                <p class="small text-slate-500 mb-0" style="font-size: 0.75rem;">Relative humidity over
+                                    60%</p>
                             </div>
                         </div>
-                        <span id="insight-sun" class="fw-bold font-monospace bg-slate-900 px-2 py-1 rounded-2">--</span>
+                        <span id="factor-hum" class="fw-bold font-monospace bg-slate-900 px-2 py-1 rounded-2">--</span>
                     </div>
                 </div>
-            </section>
-
-            <!-- Air Quality -->
-            <section id="air-quality-section" class="bg-slate-800 border-slate-700 rounded-4 p-4 shadow-lg d-none">
-                <h2
-                    class="text-slate-400 fw-semibold mb-3 text-uppercase tracking-widest small border-bottom border-slate-700 pb-2">
-                    Air Quality</h2>
-                <div class="d-flex align-items-center justify-content-between">
-                    <div class="d-flex align-items-center gap-3">
-                        <div class="icon-circle icon-circle-purple">
-                            <i class="fa-solid fa-lungs"></i>
-                        </div>
-                        <div>
-                            <p class="fw-medium text-light mb-0">US AQI</p>
-                            <p class="small text-slate-500 mb-0" style="font-size: 0.75rem;">US AQI based on local particles</p>
-                        </div>
-                    </div>
-                    <span id="insight-air" class="fw-bold font-monospace bg-slate-900 px-2 py-1 rounded-2">--</span>
-                </div>
-            </section>
+            </div>
 
             <!-- 24-Hour Forecast Chart -->
-            <section id="hourly-section" class="bg-slate-800 border-slate-700 rounded-4 p-4 shadow-lg mb-5 d-none">
+            <div class="bg-slate-800 border-slate-700 rounded-4 p-4 shadow-lg mb-5">
                 <h2
                     class="text-slate-400 fw-semibold mb-3 text-uppercase tracking-widest small border-bottom border-slate-700 pb-2">
-                    Hourly Forecast</h2>
+                    24-Hour Pain Outlook</h2>
                 <div class="w-100 position-relative chart-container">
                     <canvas id="forecast-chart"></canvas>
                 </div>
-            </section>
+            </div>
 
-            <!-- 7-Day Forecast -->
-            <section id="seven-day-section" class="bg-slate-800 border-slate-700 rounded-4 p-4 shadow-lg mb-5 d-none">
+            <!-- 7-Day Forecast Outlook -->
+            <div class="bg-slate-800 border-slate-700 rounded-4 p-4 shadow-lg mb-5">
                 <h2
                     class="text-slate-400 fw-semibold mb-3 text-uppercase tracking-widest small border-bottom border-slate-700 pb-2">
-                    7-Day Forecast</h2>
+                    7-Day Pain Outlook</h2>
                 <div id="weekly-outlook" class="weekly-outlook-grid"></div>
-            </section>
+            </div>
 
         </div>
 
     </main>
 
     <footer class="w-100 text-center py-4 text-slate-500 small mt-auto border-top border-slate-800">
-        <p class="mb-1"><i class="fa-solid fa-circle-info me-1"></i> Disclaimer: VaporCast provides general weather information and planning insights. Conditions can change quickly, so always use your local official alerts for critical decisions.</p>
+        <p class="mb-1"><i class="fa-solid fa-circle-info me-1"></i> Disclaimer: This is an estimate based on weather
+              studies. Every body is different - this is your personal weather guide, not medical advice.</p>
         <p class="mt-1 text-slate-600 mb-3">Weather data provided by <a href="https://open-meteo.com/" target="_blank"
                 class="text-slate-500 text-decoration-underline hover-text-white">Open-Meteo</a></p>
         <p class="mb-0 small text-slate-500 mt-2">Music by <a href="https://pixabay.com/users/monume-44679891/?utm_source=link-attribution&utm_medium=referral&utm_campaign=music&utm_content=498055" target="_blank" rel="noopener noreferrer" class="text-decoration-underline hover-text-white">Monume</a> from <a href="https://pixabay.com/music//?utm_source=link-attribution&utm_medium=referral&utm_campaign=music&utm_content=498055" target="_blank" rel="noopener noreferrer" class="text-decoration-underline hover-text-white">Pixabay</a></p>
