@@ -30,6 +30,10 @@ const dom = {
     themeToggleIcon: document.getElementById('theme-toggle-icon'),
     themeToggleLabel: document.getElementById('theme-toggle-label'),
     themeOptions: document.querySelectorAll('.theme-option'),
+    btnAudioToggle: document.getElementById('btn-audio-toggle'),
+    audioToggleIcon: document.getElementById('audio-toggle-icon'),
+    audioToggleLabel: document.getElementById('audio-toggle-label'),
+    retroAudio: document.getElementById('retro-audio'),
 
     painIndexTitle: document.getElementById('pain-index-title'),
     painValue: document.getElementById('pain-index-value'),
@@ -53,6 +57,7 @@ const dom = {
 function init() {
     setupEventListeners();
     initTheme();
+    initAudio();
 
     const savedLoc = localStorage.getItem('paincast_location');
     if (savedLoc) {
@@ -74,6 +79,7 @@ function setupEventListeners() {
     dom.btnRefresh.addEventListener('click', refreshData);
     dom.btnRetry.addEventListener('click', refreshData);
     dom.btnThemeToggle.addEventListener('click', toggleThemeDropdown);
+    if (dom.btnAudioToggle) dom.btnAudioToggle.addEventListener('click', toggleAudio);
 
     document.addEventListener('click', handleDocumentClick);
     document.addEventListener('keydown', handleDocumentKeydown);
@@ -81,6 +87,42 @@ function setupEventListeners() {
     dom.themeOptions.forEach(option => {
         option.addEventListener('click', handleThemeSelect);
     });
+}
+
+function toggleAudio() {
+    if (!dom.retroAudio) return;
+    const audio = dom.retroAudio;
+    if (audio.paused) {
+        audio.play().then(() => {
+            updateAudioUI(false);
+        }).catch(err => {
+            console.warn('Audio play failed', err);
+        });
+    } else {
+        audio.pause();
+        updateAudioUI(true);
+    }
+}
+
+function updateAudioUI(paused) {
+    if (!dom.btnAudioToggle) return;
+    if (paused) {
+        if (dom.audioToggleIcon) dom.audioToggleIcon.className = 'fa-solid fa-play me-1';
+        if (dom.audioToggleLabel) dom.audioToggleLabel.textContent = 'Music';
+        dom.btnAudioToggle.setAttribute('aria-pressed', 'false');
+    } else {
+        if (dom.audioToggleIcon) dom.audioToggleIcon.className = 'fa-solid fa-pause me-1';
+        if (dom.audioToggleLabel) dom.audioToggleLabel.textContent = 'Stop';
+        dom.btnAudioToggle.setAttribute('aria-pressed', 'true');
+    }
+}
+
+function initAudio() {
+    if (!dom.retroAudio || !dom.btnAudioToggle) return;
+    updateAudioUI(dom.retroAudio.paused);
+    dom.retroAudio.addEventListener('play', () => updateAudioUI(false));
+    dom.retroAudio.addEventListener('pause', () => updateAudioUI(true));
+    dom.retroAudio.addEventListener('ended', () => updateAudioUI(true));
 }
 
 function toggleThemeDropdown(event) {
@@ -125,9 +167,8 @@ function handleDocumentKeydown(event) {
 
 function initTheme() {
     const savedTheme = localStorage.getItem(THEME_STORAGE_KEY);
-    const prefersDark = window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches;
-    const fallbackTheme = prefersDark ? 'dark' : 'light';
-    const theme = THEME_ORDER.includes(savedTheme) ? savedTheme : fallbackTheme;
+    // Default to 'retro' when no user preference is saved.
+    const theme = THEME_ORDER.includes(savedTheme) ? savedTheme : 'retro';
 
     applyTheme(theme);
 }
