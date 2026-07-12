@@ -12,20 +12,14 @@ Visit the live, client-side application directly in your browser:
 
 ## 📸 Screenshots
 
-*The following placeholders represent recommended screenshots for the repository. Please save image captures with these exact filenames and paths:*
+### Main Dashboard (Retro Theme - Default)
+![Main Dashboard in Retro Theme](screenshots/dashboard-retro.png)
 
-- **Main Dashboard (Retro Theme)**
-  - **Filename:** `screenshots/dashboard-retro.png`
-  - **Recommended Dimensions:** 1200 × 800 px
-  - **Displays:** The initial view featuring the Retro theme (default), showing the main 1–10 index, active weather metrics, and the 24-hour bar chart.
-- **Main Dashboard (Light Theme)**
-  - **Filename:** `screenshots/dashboard-light.png`
-  - **Recommended Dimensions:** 1200 × 800 px
-  - **Displays:** The clean light mode styling showing alternative theme visual options.
-- **7-Day Pain Outlook**
-  - **Filename:** `screenshots/weekly-outlook.png`
-  - **Recommended Dimensions:** 1200 × 400 px
-  - **Displays:** A close-up of the weekly forecast grid showing predicted index levels and weather summaries.
+### Main Dashboard (Light Theme)
+![Main Dashboard in Light Theme](screenshots/dashboard-light.png)
+
+### 7-Day Pain Outlook
+![7-Day Pain Outlook Grid](screenshots/weekly-outlook.png)
 
 ---
 
