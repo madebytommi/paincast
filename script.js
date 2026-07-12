@@ -6,6 +6,7 @@ const THEME_ORDER = ['light', 'dark', 'retro', 'contrast'];
 
 let currentChart = null;
 let chartState = null;
+let modalOpener = null;
 
 const DAY_LABEL_FORMATTER = new Intl.DateTimeFormat([], { weekday: 'short' });
 const DAY_DATE_FORMATTER = new Intl.DateTimeFormat([], { month: 'short', day: 'numeric' });
@@ -51,22 +52,38 @@ const dom = {
     factorHum: document.getElementById('factor-hum'),
 
     chartCanvas: document.getElementById('forecast-chart'),
-    weeklyOutlook: document.getElementById('weekly-outlook')
+    weeklyOutlook: document.getElementById('weekly-outlook'),
+    locationUnavailableState: document.getElementById('location-unavailable-state'),
+    inputNoLocation: document.getElementById('input-no-location'),
+    btnSubmitNoLocation: document.getElementById('btn-submit-no-location'),
+    btnUseDemoLocation: document.getElementById('btn-use-demo-location')
 };
+
+function isLocationValid(loc) {
+    if (!loc) return false;
+    const lat = Number(loc.lat);
+    const lon = Number(loc.lon);
+    return Number.isFinite(lat) && Number.isFinite(lon) && lat >= -90 && lat <= 90 && lon >= -180 && lon <= 180;
+}
 
 function init() {
     setupEventListeners();
     initTheme();
     initAudio();
 
-    const savedLoc = localStorage.getItem('paincast_location');
-    if (savedLoc) {
-        const { lat, lon, manual, locationName } = JSON.parse(savedLoc);
-        if (manual) {
-            fetchData(lat, lon, locationName);
-        } else {
-            getGeolocation();
+    let savedLoc = null;
+    try {
+        const item = localStorage.getItem('paincast_location');
+        if (item) {
+            savedLoc = JSON.parse(item);
         }
+    } catch (e) {
+        console.warn("Malformed local storage data", e);
+        localStorage.removeItem('paincast_location');
+    }
+
+    if (savedLoc && isLocationValid(savedLoc)) {
+        fetchData(savedLoc.lat, savedLoc.lon, savedLoc.locationName);
     } else {
         getGeolocation();
     }
@@ -80,6 +97,22 @@ function setupEventListeners() {
     dom.btnRetry.addEventListener('click', refreshData);
     dom.btnThemeToggle.addEventListener('click', toggleThemeDropdown);
     if (dom.btnAudioToggle) dom.btnAudioToggle.addEventListener('click', toggleAudio);
+
+    dom.inputLocation.addEventListener('keydown', (e) => {
+        if (e.key === 'Enter') {
+            e.preventDefault();
+            handleManualSubmit();
+        }
+    });
+
+    dom.btnSubmitNoLocation.addEventListener('click', handleNoLocationSubmit);
+    dom.btnUseDemoLocation.addEventListener('click', handleUseDemoLocation);
+    dom.inputNoLocation.addEventListener('keydown', (e) => {
+        if (e.key === 'Enter') {
+            e.preventDefault();
+            handleNoLocationSubmit();
+        }
+    });
 
     document.addEventListener('click', handleDocumentClick);
     document.addEventListener('keydown', handleDocumentKeydown);
@@ -162,6 +195,29 @@ function handleDocumentClick(event) {
 function handleDocumentKeydown(event) {
     if (event.key === 'Escape') {
         closeThemeDropdown();
+        if (!dom.modalLocation.classList.contains('d-none')) {
+            closeModal();
+        }
+    }
+
+    if (!dom.modalLocation.classList.contains('d-none') && event.key === 'Tab') {
+        const focusableElements = dom.modalLocation.querySelectorAll('button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"])');
+        if (focusableElements.length > 0) {
+            const firstElement = focusableElements[0];
+            const lastElement = focusableElements[focusableElements.length - 1];
+
+            if (event.shiftKey) {
+                if (document.activeElement === firstElement) {
+                    lastElement.focus();
+                    event.preventDefault();
+                }
+            } else {
+                if (document.activeElement === lastElement) {
+                    firstElement.focus();
+                    event.preventDefault();
+                }
+            }
+        }
     }
 }
 
@@ -216,12 +272,21 @@ function applyTheme(theme) {
 }
 
 function refreshData() {
-    const savedLoc = localStorage.getItem('paincast_location');
-    if (savedLoc) {
-        const { lat, lon, locationName } = JSON.parse(savedLoc);
-        fetchData(lat, lon, locationName);
+    let savedLoc = null;
+    try {
+        const item = localStorage.getItem('paincast_location');
+        if (item) {
+            savedLoc = JSON.parse(item);
+        }
+    } catch (e) {
+        console.warn("Malformed local storage data", e);
+        localStorage.removeItem('paincast_location');
+    }
+
+    if (savedLoc && isLocationValid(savedLoc)) {
+        fetchData(savedLoc.lat, savedLoc.lon, savedLoc.locationName);
     } else {
-        getGeolocation();
+        showLocationUnavailable("No saved location to refresh.");
     }
 }
 
@@ -229,6 +294,8 @@ function showLoading() {
     dom.loadingState.classList.remove('d-none');
     dom.dashboard.classList.add('d-none');
     dom.errorState.classList.add('d-none');
+    dom.locationUnavailableState.classList.add('d-none');
+    dom.locationContainer.classList.add('d-none');
 }
 
 function showError(msg) {
@@ -236,28 +303,42 @@ function showError(msg) {
     dom.errorState.classList.remove('d-none');
     dom.loadingState.classList.add('d-none');
     dom.dashboard.classList.add('d-none');
+    dom.locationUnavailableState.classList.add('d-none');
+    dom.locationContainer.classList.add('d-none');
 }
 
 function showDashboard() {
     dom.dashboard.classList.remove('d-none');
     dom.loadingState.classList.add('d-none');
     dom.errorState.classList.add('d-none');
+    dom.locationUnavailableState.classList.add('d-none');
+    dom.locationContainer.classList.remove('d-none');
 }
 
 function openModal() {
+    modalOpener = document.activeElement;
     dom.modalLocation.classList.remove('d-none');
     dom.locationContainer.classList.add('d-none');
+    dom.btnManualLocation.setAttribute('aria-expanded', 'true');
 
     const savedLoc = localStorage.getItem('paincast_location');
     if (savedLoc) {
         const { locationName } = JSON.parse(savedLoc);
         dom.inputLocation.value = locationName || '';
     }
+    
+    setTimeout(() => {
+        dom.inputLocation.focus();
+    }, 10);
 }
 
 function closeModal() {
     dom.modalLocation.classList.add('d-none');
     dom.locationContainer.classList.remove('d-none');
+    dom.btnManualLocation.setAttribute('aria-expanded', 'false');
+    if (modalOpener) {
+        modalOpener.focus();
+    }
 }
 
 function getGeolocation() {
@@ -265,7 +346,7 @@ function getGeolocation() {
     dom.locationDisplay.textContent = "Acquiring location...";
 
     if (!navigator.geolocation) {
-        handleLocationError("Geolocation is not supported. Using default.");
+        handleLocationUnavailable("Geolocation is not supported by this browser.");
         return;
     }
 
@@ -273,6 +354,12 @@ function getGeolocation() {
         async position => {
             const lat = position.coords.latitude;
             const lon = position.coords.longitude;
+
+            if (!Number.isFinite(lat) || !Number.isFinite(lon)) {
+                handleLocationUnavailable("Invalid GPS coordinates returned.");
+                return;
+            }
+
             try {
                 const res = await fetch(`https://api.bigdatacloud.net/data/reverse-geocode-client?latitude=${lat}&longitude=${lon}&localityLanguage=en`);
                 const data = await res.json();
@@ -290,20 +377,110 @@ function getGeolocation() {
         },
         error => {
             console.warn("Geolocation error", error);
-            handleLocationError("Location access denied or unavailable. Using default or last known.");
+            let reason = "Location access denied or unavailable.";
+            if (error.code === error.PERMISSION_DENIED) {
+                reason = "Location access was denied.";
+            } else if (error.code === error.POSITION_UNAVAILABLE) {
+                reason = "Location service is currently unavailable.";
+            } else if (error.code === error.TIMEOUT) {
+                reason = "Location discovery timed out.";
+            }
+            handleLocationUnavailable(reason);
         },
         { timeout: 10000 }
     );
 }
 
-function handleLocationError(msg) {
-    const savedLoc = localStorage.getItem('paincast_location');
-    if (savedLoc) {
-        const { lat, lon, locationName } = JSON.parse(savedLoc);
-        fetchData(lat, lon, locationName || "Saved Location");
-    } else {
-        fetchData(DEFAULT_LAT, DEFAULT_LON, "Nashville, TN (Default)");
+function handleLocationUnavailable(reason) {
+    let savedLoc = null;
+    try {
+        const item = localStorage.getItem('paincast_location');
+        if (item) {
+            savedLoc = JSON.parse(item);
+        }
+    } catch (e) {
+        console.warn("Malformed local storage data in fallback", e);
+        localStorage.removeItem('paincast_location');
     }
+
+    if (savedLoc && isLocationValid(savedLoc)) {
+        fetchData(savedLoc.lat, savedLoc.lon, savedLoc.locationName);
+    } else {
+        showLocationUnavailable(reason);
+    }
+}
+
+function showLocationUnavailable(reason) {
+    dom.loadingState.classList.add('d-none');
+    dom.dashboard.classList.add('d-none');
+    dom.errorState.classList.add('d-none');
+    dom.locationContainer.classList.add('d-none');
+    dom.modalLocation.classList.add('d-none');
+    dom.locationUnavailableState.classList.remove('d-none');
+    
+    setTimeout(() => {
+        dom.inputNoLocation.focus();
+    }, 10);
+}
+
+async function handleNoLocationSubmit() {
+    const query = dom.inputNoLocation.value.trim();
+    if (!query) {
+        alert("Please enter a city or zip code.");
+        return;
+    }
+
+    try {
+        dom.btnSubmitNoLocation.disabled = true;
+        dom.btnSubmitNoLocation.textContent = "Searching...";
+
+        const geoUrl = `https://nominatim.openstreetmap.org/search?q=${encodeURIComponent(query)}&format=json&limit=1`;
+        const res = await fetch(geoUrl, {
+            headers: { 'User-Agent': 'PainCastApp/1.0' }
+        });
+        const geoData = await res.json();
+
+        if (!geoData || geoData.length === 0) {
+            alert("Location not found. Please try again.");
+            return;
+        }
+
+        const result = geoData[0];
+        const lat = parseFloat(result.lat);
+        const lon = parseFloat(result.lon);
+
+        if (!Number.isFinite(lat) || !Number.isFinite(lon)) {
+            alert("Invalid coordinates returned from search.");
+            return;
+        }
+
+        let locationName = result.name;
+        if (result.display_name) {
+            const parts = result.display_name.split(',').map(s => s.trim());
+            if (parts.length > 2) {
+                locationName = `${parts[0]}, ${parts[1]}`;
+            } else {
+                locationName = result.display_name;
+            }
+        }
+
+        localStorage.setItem('paincast_location', JSON.stringify({ lat, lon, manual: true, locationName }));
+        fetchData(lat, lon, locationName);
+    } catch (e) {
+        console.error(e);
+        alert("Failed to reach geocoding service.");
+    } finally {
+        dom.btnSubmitNoLocation.disabled = false;
+        dom.btnSubmitNoLocation.textContent = "Search";
+    }
+}
+
+function handleUseDemoLocation() {
+    const lat = DEFAULT_LAT;
+    const lon = DEFAULT_LON;
+    const locationName = "Nashville, TN (Demo)";
+    localStorage.setItem('paincast_location', JSON.stringify({ lat, lon, manual: true, locationName }));
+    fetchData(lat, lon, locationName);
 }
 
 async function handleManualSubmit() {
@@ -334,6 +511,12 @@ async function handleManualSubmit() {
         const lat = parseFloat(result.lat);
         const lon = parseFloat(result.lon);
 
+        if (!Number.isFinite(lat) || !Number.isFinite(lon)) {
+            alert("Invalid coordinates returned from search.");
+            dom.btnSubmitLocation.disabled = false;
+            dom.btnSubmitLocation.textContent = "Update";
+            return;
+        }
 
         let locationName = result.name;
         if (result.display_name) {
@@ -360,6 +543,10 @@ async function handleManualSubmit() {
 
 // --- Logic ---
 async function fetchData(lat, lon, locationName) {
+    if (!Number.isFinite(lat) || !Number.isFinite(lon)) {
+        showError("Invalid coordinates provided to weather request.");
+        return;
+    }
     showLoading();
     dom.locationDisplay.textContent = locationName || `GPS Coord: ${lat.toFixed(2)}, ${lon.toFixed(2)}`;
 

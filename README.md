@@ -35,13 +35,17 @@ PainCast uses a client-side heuristic model to weigh environmental factors that 
 > [!IMPORTANT]
 > **Medical Disclaimer:** The scoring model is a heuristic rule-of-thumb based on general observational weather studies. It is **not** a medically validated diagnostic model, nor does it predict or determine biological pain. Weather sensitivity is highly individual, and this tool is intended solely for personal planning, not as professional medical advice.
 
----
-
 ## 🔒 Privacy
 
-- **No Backend:** PainCast is a static client-side web application. It does not run a backend server, track user profiles, or collect telemetry.
-- **Direct API Requests:** Location searches (via OpenStreetMap Nominatim) and weather forecast requests (via Open-Meteo) occur directly from the browser to the third-party endpoints.
-- **Local Storage:** Location preferences, latitude/longitude coordinates, and theme selections are stored strictly on your device using the browser's `localStorage`. No location history is transmitted or saved remotely.
+PainCast is designed with user privacy in mind. Here is a high-level overview of how your data is handled:
+
+- **No Application Backend:** PainCast is a purely static client-side web application. PainCast itself does not maintain a remote user account, user tracking system, or location database.
+- **Direct API Queries to Third Parties:**
+  - **Weather Requests:** Weather forecast queries are sent directly from your browser to **Open-Meteo**.
+  - **Manual Location Searches:** Text queries for manual location entry are sent directly to **OpenStreetMap** (using the Nominatim geocoding API).
+  - **Auto-Location Detection:** If you authorize the browser geolocation prompt, your coordinates are sent to **BigDataCloud**'s reverse-geocoding API to resolve them into a readable city name for dashboard display.
+- **Data Sharing & Third-Party Policies:** When your browser requests data from these external services, they receive the information necessary to fulfill the request (such as your IP address, coordinates, or text queries). These requests are governed by each provider's respective privacy policy.
+- **Local Storage:** Your selected location, latitude/longitude coordinates, search choices, and theme selections are stored strictly on your local device using the browser's `localStorage` for your convenience. No personal information is stored remotely or tracked by PainCast.
 
 ---
 

@@ -61,24 +61,24 @@
             </div>
             <div class="d-flex gap-2">
                 <button id="btn-refresh" class="btn btn-sm btn-slate-700 text-light rounded-3 custom-transition"
-                    title="Refresh Weather Data">
-                    <i class="fa-solid fa-rotate-right"></i>
+                    title="Refresh Weather Data" aria-label="Refresh Weather Data">
+                    <i class="fa-solid fa-rotate-right" aria-hidden="true"></i>
                 </button>
                 <button id="btn-manual-location"
-                    class="btn btn-sm btn-slate-700 text-light rounded-3 custom-transition">
+                    class="btn btn-sm btn-slate-700 text-light rounded-3 custom-transition" aria-expanded="false" aria-controls="modal-location">
                     Change Location
                 </button>
             </div>
         </div>
 
         <!-- Manual Location Modal (Hidden by default) -->
-        <div id="modal-location"
+        <div id="modal-location" role="dialog" aria-modal="true" aria-labelledby="modal-location-title"
             class="d-none w-100 modal-surface rounded-4 p-4 shadow-lg position-relative animate-fade-in border">
-            <button id="btn-close-modal"
+            <button id="btn-close-modal" aria-label="Close location dialog."
                 class="btn btn-link position-absolute top-0 end-0 mt-2 me-2 text-slate-400 hover-text-dark text-decoration-none">
-                <i class="fa-solid fa-xmark fs-5"></i>
+                <i class="fa-solid fa-xmark fs-5" aria-hidden="true"></i>
             </button>
-            <h2 class="fs-5 fw-semibold mb-3 text-light">Enter Location</h2>
+            <h2 id="modal-location-title" class="fs-5 fw-semibold mb-3 text-light">Enter Location</h2>
             <div class="d-flex flex-column flex-sm-row gap-2">
                 <input type="text" id="input-location" placeholder="City, State or ZIP (e.g., Nashville, TN)"
                     class="form-control bg-slate-900 border-slate-700 text-light py-2 px-3 rounded-3"
@@ -88,6 +88,26 @@
             </div>
             <p class="small text-slate-500 mt-2 mb-0"><i class="fa-solid fa-circle-info me-1"></i> Powered by
                 OpenStreetMap Geocoding.</p>
+        </div>
+
+        <!-- Location Unavailable State -->
+        <div id="location-unavailable-state" class="d-none w-100 glass-card rounded-4 p-4 text-center">
+            <i class="fa-solid fa-location-slash display-6 mb-3 text-warning"></i>
+            <h3 class="fs-5 fw-bold mb-2 text-light">Location Access Unavailable</h3>
+            <p class="text-slate-400 mb-3 max-w-lg mx-auto">
+                Location access was unavailable (it may be disabled, unsupported, or timed out).
+                Please enter a city, state, or ZIP code below to view your PainCast forecast, or use the demo location.
+            </p>
+            <div class="d-flex flex-column flex-sm-row gap-2 max-w-md mx-auto mb-3">
+                <input type="text" id="input-no-location" placeholder="City, State or ZIP (e.g., Nashville, TN)"
+                    class="form-control bg-slate-900 border-slate-700 text-light py-2 px-3 rounded-3"
+                    autocomplete="off">
+                <button id="btn-submit-no-location" class="btn btn-primary fw-medium px-4 py-2 rounded-3"
+                    style="min-width: 120px;">Search</button>
+            </div>
+            <button id="btn-use-demo-location" class="btn btn-link text-slate-500 hover-text-white text-decoration-underline p-0 small">
+                Use Nashville, TN (Demo Location)
+            </button>
         </div>
 
         <!-- Loading State -->
@@ -279,8 +299,16 @@
     <footer class="w-100 text-center py-4 text-slate-500 small mt-auto border-top border-slate-800">
         <p class="mb-1"><i class="fa-solid fa-circle-info me-1"></i> Disclaimer: This is an estimate based on weather
               studies. Every body is different - this is your personal weather guide, not medical advice.</p>
-        <p class="mt-1 text-slate-600 mb-3">Weather data provided by <a href="https://open-meteo.com/" target="_blank"
+        <p class="mt-1 text-slate-600 mb-2">Weather data provided by <a href="https://open-meteo.com/" target="_blank"
                 class="text-slate-500 text-decoration-underline hover-text-white">Open-Meteo</a></p>
+        <p class="mb-2">
+            <details class="d-inline-block text-start max-w-lg mx-auto" style="cursor: pointer;">
+                <summary class="text-slate-500 text-decoration-underline hover-text-white select-none">Privacy Disclosure</summary>
+                <div class="mt-2 text-slate-500 bg-slate-900 border border-slate-800 rounded-3 p-3 text-start small lh-base" style="font-size: 0.8rem; max-width: 340px; margin: 0 auto;">
+                    PainCast runs entirely in your browser with no application backend or user accounts. Weather queries go directly to <strong>Open-Meteo</strong>, manual search queries to <strong>OpenStreetMap (Nominatim)</strong>, and GPS coordinates for auto-detection to <strong>BigDataCloud</strong>. These third-party services receive the technical details (e.g., IP address and coordinates) required to fulfill requests under their own privacy policies. Settings are stored locally in your browser's local storage.
+                </div>
+            </details>
+        </p>
         <p class="mb-0 small text-slate-500 mt-2">Music by <a href="https://pixabay.com/users/monume-44679891/?utm_source=link-attribution&utm_medium=referral&utm_campaign=music&utm_content=498055" target="_blank" rel="noopener noreferrer" class="text-decoration-underline hover-text-white">Monume</a> from <a href="https://pixabay.com/music//?utm_source=link-attribution&utm_medium=referral&utm_campaign=music&utm_content=498055" target="_blank" rel="noopener noreferrer" class="text-decoration-underline hover-text-white">Pixabay</a></p>
     </footer>
 
