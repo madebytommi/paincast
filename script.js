@@ -558,12 +558,13 @@ function updateDashboardUI(current, scores, index, locationName) {
     // Clear old classes
     dom.painValue.classList.remove('pain-low', 'pain-med', 'pain-high');
     dom.indexGlow.classList.remove('glow-low', 'glow-med', 'glow-high');
+    dom.painLabel.classList.remove('pain-low', 'pain-med', 'pain-high');
 
     const styles = getStylesForIndex(index);
     dom.painValue.classList.add(styles.text);
     dom.indexGlow.classList.add(styles.bg);
     dom.painLabel.textContent = styles.label;
-    dom.painLabel.className = `text-xl font-medium relative z-10 transition-colors duration-500 ${styles.text}`;
+    dom.painLabel.classList.add(styles.text);
 }
 
 function renderWeeklyOutlook(days) {
