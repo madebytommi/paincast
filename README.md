@@ -60,9 +60,15 @@ Since the application is purely static, you can run it locally without installin
 2. **Open index.html:**
    Simply double-click `index.html` to open it directly in any modern web browser.
 3. **Serve (Optional):**
-   To test geolocation features more reliably (which browser security may restrict on local file protocols), serve the directory using a simple local server:
-   - Python: `python3 -m http.server 8000`
-   - Node: `npx serve`
+    - Node: `npx serve`
+
+### 🧪 Automated Testing
+
+The core pain calculation logic is independently testable without any external dependencies. To run the automated test suite, ensure you have [Node.js](https://nodejs.org/) installed, and run the built-in test runner from the project root:
+
+```bash
+node --test tests/pain-model.test.js
+```
 
 ---
 
