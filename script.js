@@ -61,6 +61,31 @@ const dom = {
     btnUseDemoLocation: document.getElementById('btn-use-demo-location')
 };
 
+const safeStorage = {
+    getItem(key) {
+        try { return localStorage.getItem(key); }
+        catch (e) { console.warn('Storage read failed', e); return null; }
+    },
+    setItem(key, value) {
+        try { localStorage.setItem(key, value); }
+        catch (e) { console.warn('Storage write failed', e); }
+    },
+    removeItem(key) {
+        try { localStorage.removeItem(key); }
+        catch (e) { console.warn('Storage remove failed', e); }
+    },
+    getJSON(key) {
+        const val = this.getItem(key);
+        if (!val) return null;
+        try { return JSON.parse(val); }
+        catch (e) { console.warn('Storage JSON parse failed', e); return null; }
+    },
+    setJSON(key, value) {
+        try { this.setItem(key, JSON.stringify(value)); }
+        catch (e) { console.warn('Storage JSON stringify failed', e); }
+    }
+};
+
 function isLocationValid(loc) {
     if (!loc) return false;
     const lat = Number(loc.lat);
@@ -73,16 +98,7 @@ function init() {
     initTheme();
     initAudio();
 
-    let savedLoc = null;
-    try {
-        const item = localStorage.getItem('paincast_location');
-        if (item) {
-            savedLoc = JSON.parse(item);
-        }
-    } catch (e) {
-        console.warn("Malformed local storage data", e);
-        localStorage.removeItem('paincast_location');
-    }
+    let savedLoc = safeStorage.getJSON('paincast_location');
 
     if (savedLoc && isLocationValid(savedLoc)) {
         fetchData(savedLoc.lat, savedLoc.lon, savedLoc.locationName);
@@ -202,7 +218,7 @@ function handleDocumentKeydown(event) {
 }
 
 function initTheme() {
-    const savedTheme = localStorage.getItem(THEME_STORAGE_KEY);
+    const savedTheme = safeStorage.getItem(THEME_STORAGE_KEY);
     // Default to 'retro' when no user preference is saved.
     const theme = THEME_ORDER.includes(savedTheme) ? savedTheme : 'retro';
 
@@ -216,7 +232,7 @@ function handleThemeSelect(event) {
     }
 
     applyTheme(selectedTheme);
-    localStorage.setItem(THEME_STORAGE_KEY, selectedTheme);
+    safeStorage.setItem(THEME_STORAGE_KEY, selectedTheme);
     closeThemeDropdown();
 
     if (chartState) {
@@ -252,16 +268,7 @@ function applyTheme(theme) {
 }
 
 function refreshData() {
-    let savedLoc = null;
-    try {
-        const item = localStorage.getItem('paincast_location');
-        if (item) {
-            savedLoc = JSON.parse(item);
-        }
-    } catch (e) {
-        console.warn("Malformed local storage data", e);
-        localStorage.removeItem('paincast_location');
-    }
+    let savedLoc = safeStorage.getJSON('paincast_location');
 
     if (savedLoc && isLocationValid(savedLoc)) {
         fetchData(savedLoc.lat, savedLoc.lon, savedLoc.locationName);
@@ -299,10 +306,9 @@ function openModal() {
     modalOpener = document.activeElement;
     dom.btnManualLocation.setAttribute('aria-expanded', 'true');
 
-    const savedLoc = localStorage.getItem('paincast_location');
+    const savedLoc = safeStorage.getJSON('paincast_location');
     if (savedLoc) {
-        const { locationName } = JSON.parse(savedLoc);
-        dom.inputLocation.value = locationName || '';
+        dom.inputLocation.value = savedLoc.locationName || '';
     }
     
     dom.modalLocation.showModal();
@@ -342,12 +348,13 @@ function getGeolocation() {
                 const state = data.principalSubdivision ? `, ${data.principalSubdivision}` : "";
                 const locationName = city ? `${city}${state}` : "Local GPS";
 
-                localStorage.setItem('paincast_location', JSON.stringify({ lat, lon, manual: false, locationName }));
+                safeStorage.setJSON('paincast_location', { lat, lon, manual: false, locationName });
                 fetchData(lat, lon, locationName);
             } catch (e) {
-                const locationName = "Current Location";
-                localStorage.setItem('paincast_location', JSON.stringify({ lat, lon, manual: false, locationName }));
-                fetchData(lat, lon, locationName);
+                console.error("Reverse geocoding failed", e);
+                const fallbackName = `GPS Coord: ${lat.toFixed(2)}, ${lon.toFixed(2)}`;
+                safeStorage.setJSON('paincast_location', { lat, lon, manual: false, locationName: fallbackName });
+                fetchData(lat, lon, fallbackName);
             }
         },
         error => {
@@ -367,16 +374,7 @@ function getGeolocation() {
 }
 
 function handleLocationUnavailable(reason) {
-    let savedLoc = null;
-    try {
-        const item = localStorage.getItem('paincast_location');
-        if (item) {
-            savedLoc = JSON.parse(item);
-        }
-    } catch (e) {
-        console.warn("Malformed local storage data in fallback", e);
-        localStorage.removeItem('paincast_location');
-    }
+    let savedLoc = safeStorage.getJSON('paincast_location');
 
     if (savedLoc && isLocationValid(savedLoc)) {
         fetchData(savedLoc.lat, savedLoc.lon, savedLoc.locationName);
@@ -400,6 +398,40 @@ function showLocationUnavailable(reason) {
     }, 10);
 }
 
+async function geocodeLocation(query) {
+    const geoUrl = `https://nominatim.openstreetmap.org/search?q=${encodeURIComponent(query)}&format=json&limit=1`;
+    const res = await fetch(geoUrl, {
+        headers: { 'User-Agent': 'PainCastApp/1.0' }
+    });
+    
+    if (!res.ok) throw new Error("Geocoding network error");
+    const geoData = await res.json();
+
+    if (!geoData || geoData.length === 0) {
+        return null; // Not found
+    }
+
+    const result = geoData[0];
+    const lat = parseFloat(result.lat);
+    const lon = parseFloat(result.lon);
+
+    if (!Number.isFinite(lat) || !Number.isFinite(lon)) {
+        throw new Error("Invalid coordinates returned from search.");
+    }
+
+    let locationName = result.name;
+    if (result.display_name) {
+        const parts = result.display_name.split(',').map(s => s.trim());
+        if (parts.length > 2) {
+            locationName = `${parts[0]}, ${parts[1]}`;
+        } else {
+            locationName = result.display_name;
+        }
+    }
+
+    return { lat, lon, locationName };
+}
+
 async function handleNoLocationSubmit() {
     const query = dom.inputNoLocation.value.trim();
     if (!query) {
@@ -411,37 +443,15 @@ async function handleNoLocationSubmit() {
         dom.btnSubmitNoLocation.disabled = true;
         dom.btnSubmitNoLocation.textContent = "Searching...";
 
-        const geoUrl = `https://nominatim.openstreetmap.org/search?q=${encodeURIComponent(query)}&format=json&limit=1`;
-        const res = await fetch(geoUrl, {
-            headers: { 'User-Agent': 'PainCastApp/1.0' }
-        });
-        const geoData = await res.json();
-
-        if (!geoData || geoData.length === 0) {
+        const geoResult = await geocodeLocation(query);
+        if (!geoResult) {
             alert("Location not found. Please try again.");
             return;
         }
 
-        const result = geoData[0];
-        const lat = parseFloat(result.lat);
-        const lon = parseFloat(result.lon);
+        const { lat, lon, locationName } = geoResult;
 
-        if (!Number.isFinite(lat) || !Number.isFinite(lon)) {
-            alert("Invalid coordinates returned from search.");
-            return;
-        }
-
-        let locationName = result.name;
-        if (result.display_name) {
-            const parts = result.display_name.split(',').map(s => s.trim());
-            if (parts.length > 2) {
-                locationName = `${parts[0]}, ${parts[1]}`;
-            } else {
-                locationName = result.display_name;
-            }
-        }
-
-        localStorage.setItem('paincast_location', JSON.stringify({ lat, lon, manual: true, locationName }));
+        safeStorage.setJSON('paincast_location', { lat, lon, manual: true, locationName });
         fetchData(lat, lon, locationName);
     } catch (e) {
         console.error(e);
@@ -456,7 +466,7 @@ function handleUseDemoLocation() {
     const lat = DEFAULT_LAT;
     const lon = DEFAULT_LON;
     const locationName = "Nashville, TN (Demo)";
-    localStorage.setItem('paincast_location', JSON.stringify({ lat, lon, manual: true, locationName }));
+    safeStorage.setJSON('paincast_location', { lat, lon, manual: true, locationName });
     fetchData(lat, lon, locationName);
 }
 
@@ -471,41 +481,17 @@ async function handleManualSubmit() {
         dom.btnSubmitLocation.disabled = true;
         dom.btnSubmitLocation.textContent = "Searching...";
 
-        const geoUrl = `https://nominatim.openstreetmap.org/search?q=${encodeURIComponent(query)}&format=json&limit=1`;
-        const res = await fetch(geoUrl, {
-            headers: { 'User-Agent': 'PainCastApp/1.0' }
-        });
-        const geoData = await res.json();
-
-        if (!geoData || geoData.length === 0) {
+        const geoResult = await geocodeLocation(query);
+        if (!geoResult) {
             alert("Location not found. Please try again.");
             dom.btnSubmitLocation.disabled = false;
             dom.btnSubmitLocation.textContent = "Update";
             return;
         }
 
-        const result = geoData[0];
-        const lat = parseFloat(result.lat);
-        const lon = parseFloat(result.lon);
+        const { lat, lon, locationName } = geoResult;
 
-        if (!Number.isFinite(lat) || !Number.isFinite(lon)) {
-            alert("Invalid coordinates returned from search.");
-            dom.btnSubmitLocation.disabled = false;
-            dom.btnSubmitLocation.textContent = "Update";
-            return;
-        }
-
-        let locationName = result.name;
-        if (result.display_name) {
-            const parts = result.display_name.split(',').map(s => s.trim());
-            if (parts.length > 2) {
-                locationName = `${parts[0]}, ${parts[1]}`;
-            } else {
-                locationName = result.display_name;
-            }
-        }
-
-        localStorage.setItem('paincast_location', JSON.stringify({ lat, lon, manual: true, locationName }));
+        safeStorage.setJSON('paincast_location', { lat, lon, manual: true, locationName });
         dom.modalLocation.close();
         fetchData(lat, lon, locationName);
     } catch (e) {
@@ -533,10 +519,55 @@ async function fetchData(lat, lon, locationName) {
         const response = await fetch(url);
         if (!response.ok) throw new Error("Weather API Error");
         const data = await response.json();
+        
+        validateWeatherPayload(data);
+        
         processWeatherData(data, locationName);
     } catch (err) {
-        console.error(err);
-        showError("Failed to fetch weather data. Please check your connection or coordinates.");
+        console.error("Weather processing failed:", err.message);
+        if (err.message.includes("ValidationError:")) {
+            showError("The weather service returned incomplete data. Please try again.");
+        } else {
+            showError("Failed to fetch weather data. Please check your connection or coordinates.");
+        }
+    }
+}
+
+function validateWeatherPayload(data) {
+    if (!data || !data.current || !data.hourly) {
+        throw new Error("ValidationError: Missing 'current' or 'hourly' objects in weather data.");
+    }
+    
+    const curr = data.current;
+    if (!Number.isFinite(curr.temperature_2m) ||
+        !Number.isFinite(curr.relative_humidity_2m) ||
+        !Number.isFinite(curr.pressure_msl)) {
+        throw new Error("ValidationError: Invalid or missing current weather metrics.");
+    }
+    
+    const hr = data.hourly;
+    if (!Array.isArray(hr.time) || !Array.isArray(hr.temperature_2m) || 
+        !Array.isArray(hr.relative_humidity_2m) || !Array.isArray(hr.pressure_msl)) {
+        throw new Error("ValidationError: Hourly metrics are not arrays.");
+    }
+    
+    const len = hr.time.length;
+    if (len < 24) {
+        throw new Error("ValidationError: Insufficient hourly data returned (less than 24 hours).");
+    }
+    
+    if (hr.temperature_2m.length !== len || 
+        hr.relative_humidity_2m.length !== len || 
+        hr.pressure_msl.length !== len) {
+        throw new Error("ValidationError: Hourly array lengths do not match.");
+    }
+    
+    for (let i = 0; i < len; i++) {
+        if (!Number.isFinite(hr.temperature_2m[i]) || 
+            !Number.isFinite(hr.relative_humidity_2m[i]) || 
+            !Number.isFinite(hr.pressure_msl[i])) {
+            throw new Error(`ValidationError: Invalid hourly metric encountered at index ${i}.`);
+        }
     }
 }
 
