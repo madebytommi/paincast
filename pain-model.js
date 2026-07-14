@@ -1,4 +1,12 @@
 function calculatePainFactorScores(temp, humidity, pressure, prevPressure) {
+    if (typeof temp !== 'number' || Number.isNaN(temp) ||
+        typeof humidity !== 'number' || Number.isNaN(humidity) ||
+        typeof pressure !== 'number' || Number.isNaN(pressure)) {
+        throw new TypeError("Invalid numeric input");
+    }
+    if (prevPressure !== null && prevPressure !== undefined && (typeof prevPressure !== 'number' || Number.isNaN(prevPressure))) {
+        throw new TypeError("Invalid numeric input");
+    }
     // 1. Temp score: colder than 59°F increases pain
     let temp_score = Math.max(0, (59 - temp) / 27);
 
@@ -19,6 +27,14 @@ function calculatePainFactorScores(temp, humidity, pressure, prevPressure) {
 }
 
 function calculateFinalIndex(scores) {
+    if (!scores || 
+        typeof scores.temp_score !== 'number' || Number.isNaN(scores.temp_score) ||
+        typeof scores.bp_score !== 'number' || Number.isNaN(scores.bp_score) ||
+        typeof scores.hum_score !== 'number' || Number.isNaN(scores.hum_score) ||
+        typeof scores.change_score !== 'number' || Number.isNaN(scores.change_score)) {
+        throw new TypeError("Invalid numeric input");
+    }
+    
     const raw = 0.4 * scores.temp_score +
         0.35 * scores.bp_score +
         0.15 * scores.hum_score +
@@ -33,7 +49,10 @@ function average(values) {
         return 0;
     }
 
-    const total = values.reduce((sum, value) => sum + value, 0);
+    const total = values.reduce((sum, value) => {
+        if (typeof value !== 'number' || Number.isNaN(value)) throw new TypeError("Invalid numeric input");
+        return sum + value;
+    }, 0);
     return total / values.length;
 }
 

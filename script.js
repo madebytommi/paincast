@@ -61,30 +61,7 @@ const dom = {
     btnUseDemoLocation: document.getElementById('btn-use-demo-location')
 };
 
-const safeStorage = {
-    getItem(key) {
-        try { return localStorage.getItem(key); }
-        catch (e) { console.warn('Storage read failed', e); return null; }
-    },
-    setItem(key, value) {
-        try { localStorage.setItem(key, value); }
-        catch (e) { console.warn('Storage write failed', e); }
-    },
-    removeItem(key) {
-        try { localStorage.removeItem(key); }
-        catch (e) { console.warn('Storage remove failed', e); }
-    },
-    getJSON(key) {
-        const val = this.getItem(key);
-        if (!val) return null;
-        try { return JSON.parse(val); }
-        catch (e) { console.warn('Storage JSON parse failed', e); return null; }
-    },
-    setJSON(key, value) {
-        try { this.setItem(key, JSON.stringify(value)); }
-        catch (e) { console.warn('Storage JSON stringify failed', e); }
-    }
-};
+const safeStorage = createSafeStorage();
 
 function isLocationValid(loc) {
     if (!loc) return false;
@@ -406,30 +383,7 @@ async function geocodeLocation(query) {
     
     if (!res.ok) throw new Error("Geocoding network error");
     const geoData = await res.json();
-
-    if (!geoData || geoData.length === 0) {
-        return null; // Not found
-    }
-
-    const result = geoData[0];
-    const lat = parseFloat(result.lat);
-    const lon = parseFloat(result.lon);
-
-    if (!Number.isFinite(lat) || !Number.isFinite(lon)) {
-        throw new Error("Invalid coordinates returned from search.");
-    }
-
-    let locationName = result.name;
-    if (result.display_name) {
-        const parts = result.display_name.split(',').map(s => s.trim());
-        if (parts.length > 2) {
-            locationName = `${parts[0]}, ${parts[1]}`;
-        } else {
-            locationName = result.display_name;
-        }
-    }
-
-    return { lat, lon, locationName };
+    return parseNominatimResult(geoData);
 }
 
 async function handleNoLocationSubmit() {
@@ -529,44 +483,6 @@ async function fetchData(lat, lon, locationName) {
             showError("The weather service returned incomplete data. Please try again.");
         } else {
             showError("Failed to fetch weather data. Please check your connection or coordinates.");
-        }
-    }
-}
-
-function validateWeatherPayload(data) {
-    if (!data || !data.current || !data.hourly) {
-        throw new Error("ValidationError: Missing 'current' or 'hourly' objects in weather data.");
-    }
-    
-    const curr = data.current;
-    if (!Number.isFinite(curr.temperature_2m) ||
-        !Number.isFinite(curr.relative_humidity_2m) ||
-        !Number.isFinite(curr.pressure_msl)) {
-        throw new Error("ValidationError: Invalid or missing current weather metrics.");
-    }
-    
-    const hr = data.hourly;
-    if (!Array.isArray(hr.time) || !Array.isArray(hr.temperature_2m) || 
-        !Array.isArray(hr.relative_humidity_2m) || !Array.isArray(hr.pressure_msl)) {
-        throw new Error("ValidationError: Hourly metrics are not arrays.");
-    }
-    
-    const len = hr.time.length;
-    if (len < 24) {
-        throw new Error("ValidationError: Insufficient hourly data returned (less than 24 hours).");
-    }
-    
-    if (hr.temperature_2m.length !== len || 
-        hr.relative_humidity_2m.length !== len || 
-        hr.pressure_msl.length !== len) {
-        throw new Error("ValidationError: Hourly array lengths do not match.");
-    }
-    
-    for (let i = 0; i < len; i++) {
-        if (!Number.isFinite(hr.temperature_2m[i]) || 
-            !Number.isFinite(hr.relative_humidity_2m[i]) || 
-            !Number.isFinite(hr.pressure_msl[i])) {
-            throw new Error(`ValidationError: Invalid hourly metric encountered at index ${i}.`);
         }
     }
 }
