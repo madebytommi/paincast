@@ -18,16 +18,16 @@ body {
     --surface-muted: #f8fafc;
     --surface-shadow: rgba(0, 0, 0, 0.06);
 
-    --text-primary: #1e293b;
-    --text-secondary: #475569;
-    --text-tertiary: #64748b;
-    --text-soft: #334155;
-    --text-subtle: #94a3b8;
+    --text-primary: #0f172a;
+    --text-secondary: #334155;
+    --text-tertiary: #475569;
+    --text-soft: #1e293b;
+    --text-subtle: #52525b;
 
-    --c-pink: #00CD00;
-    --c-purple: #00A800;
-    --c-indigo: #008000;
-    --c-blue: #00D000;
+    --c-pink: #006600;
+    --c-purple: #006600;
+    --c-indigo: #005900;
+    --c-blue: #007300;
 }
 
 body[data-theme='dark'] {
@@ -43,6 +43,15 @@ body[data-theme='dark'] {
     --text-tertiary: #8ea2b5;
     --text-soft: #cfdae5;
     --text-subtle: #8ea2b5;
+
+    --c-pink: #00CD00;
+    --c-purple: #00A800;
+    --c-indigo: #008000;
+    --c-blue: #00D000;
+
+    --c-pain-low: #4ade80;
+    --c-pain-med: #fb923c;
+    --c-pain-high: #f87171;
 }
 
 body[data-theme='contrast'] {
@@ -83,6 +92,10 @@ body[data-theme='retro'] {
     --c-purple: #f4df76;
     --c-indigo: #7dd3fc;
     --c-blue: #4f9cff;
+
+    --c-pain-low: #86efac;
+    --c-pain-med: #fdba74;
+    --c-pain-high: #fca5a5;
 
     background-color: #2f235f !important;
     background-image:
@@ -415,6 +428,11 @@ body[data-theme='retro'] .error-card {
     background-color: var(--surface-strong);
     border: 1px solid var(--card-border);
     color: var(--text-primary);
+    min-height: 44px;
+    min-width: 44px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
 }
 
 .btn-slate-700:hover {
@@ -427,6 +445,7 @@ body[data-theme='retro'] .error-card {
     background-color: var(--surface-strong) !important;
     border-color: var(--card-border) !important;
     color: var(--text-primary) !important;
+    min-height: 44px;
 }
 
 .form-control:focus {
@@ -441,6 +460,7 @@ body[data-theme='retro'] .error-card {
 .btn-primary {
     background-color: var(--c-blue) !important;
     border-color: var(--c-blue) !important;
+    min-height: 44px;
 }
 
 .btn-primary:hover {
@@ -455,6 +475,9 @@ body[data-theme='retro'] .error-card {
 
 .theme-dropdown-menu .dropdown-item {
     color: var(--text-primary);
+    min-height: 44px;
+    display: flex;
+    align-items: center;
 }
 
 .theme-dropdown-menu .dropdown-item:hover,
@@ -470,13 +493,13 @@ body[data-theme='retro'] .error-card {
 }
 
 .icon-circle {
-    width: 2.5rem;
-    height: 2.5rem;
+    width: 3rem;
+    height: 3rem;
     border-radius: 50%;
     display: flex;
     align-items: center;
     justify-content: center;
-    font-size: 1.1rem;
+    font-size: 1.25rem;
 }
 
 .icon-circle-blue {
@@ -549,7 +572,7 @@ body[data-theme='retro'] .error-card {
 
 
 .pain-low {
-    color: #16a34a !important;
+    color: var(--c-pain-low, #166534) !important;
 }
 
 .glow-low {
@@ -557,7 +580,7 @@ body[data-theme='retro'] .error-card {
 }
 
 .pain-med {
-    color: #ea580c !important;
+    color: var(--c-pain-med, #c2410c) !important;
 }
 
 .glow-med {
@@ -565,7 +588,7 @@ body[data-theme='retro'] .error-card {
 }
 
 .pain-high {
-    color: #dc2626 !important;
+    color: var(--c-pain-high, #b91c1c) !important;
 }
 
 .glow-high {
@@ -668,6 +691,65 @@ canvas {
 .modal-surface {
     background-color: var(--surface-strong) !important;
     border-color: var(--card-border) !important;
+    border-style: solid;
+    border-width: 1px;
+}
+
+dialog {
+    border: none;
+    margin: auto;
+}
+
+dialog::backdrop {
+    background: rgba(0, 0, 0, 0.5);
+    backdrop-filter: blur(4px);
+    -webkit-backdrop-filter: blur(4px);
+}
+
+dialog#modal-location {
+    max-width: 92vw;
+}
+
+@media (min-width: 576px) {
+    dialog#modal-location {
+        max-width: 54rem;
+    }
+}
+
+/* Visible Keyboard Focus Indicator */
+button:focus-visible,
+a:focus-visible,
+input:focus-visible,
+details summary:focus-visible,
+.dropdown-item:focus-visible {
+    outline: 3px solid var(--c-purple) !important;
+    outline-offset: 2px !important;
+    box-shadow: none !important;
+}
+
+/* Custom overrides per theme for focus indicators */
+body[data-theme='dark'] button:focus-visible,
+body[data-theme='dark'] a:focus-visible,
+body[data-theme='dark'] input:focus-visible,
+body[data-theme='dark'] details summary:focus-visible,
+body[data-theme='dark'] .dropdown-item:focus-visible {
+    outline-color: #8fe7ff !important;
+}
+
+body[data-theme='retro'] button:focus-visible,
+body[data-theme='retro'] a:focus-visible,
+body[data-theme='retro'] input:focus-visible,
+body[data-theme='retro'] details summary:focus-visible,
+body[data-theme='retro'] .dropdown-item:focus-visible {
+    outline-color: #f1db76 !important;
+}
+
+body[data-theme='contrast'] button:focus-visible,
+body[data-theme='contrast'] a:focus-visible,
+body[data-theme='contrast'] input:focus-visible,
+body[data-theme='contrast'] details summary:focus-visible,
+body[data-theme='contrast'] .dropdown-item:focus-visible {
+    outline-color: #ffea00 !important;
 }
 
 @media (prefers-reduced-motion: reduce) {

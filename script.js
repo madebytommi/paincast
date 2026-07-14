@@ -52,6 +52,8 @@ const dom = {
     factorHum: document.getElementById('factor-hum'),
 
     chartCanvas: document.getElementById('forecast-chart'),
+    forecastTableBody: document.getElementById('forecast-table-body'),
+    accessibilityAnnouncer: document.getElementById('accessibility-announcer'),
     weeklyOutlook: document.getElementById('weekly-outlook'),
     locationUnavailableState: document.getElementById('location-unavailable-state'),
     inputNoLocation: document.getElementById('input-no-location'),
@@ -91,7 +93,8 @@ function init() {
 
 function setupEventListeners() {
     dom.btnManualLocation.addEventListener('click', openModal);
-    dom.btnCloseModal.addEventListener('click', closeModal);
+    dom.btnCloseModal.addEventListener('click', () => dom.modalLocation.close());
+    dom.modalLocation.addEventListener('close', closeModal);
     dom.btnSubmitLocation.addEventListener('click', handleManualSubmit);
     dom.btnRefresh.addEventListener('click', refreshData);
     dom.btnRetry.addEventListener('click', refreshData);
@@ -195,29 +198,6 @@ function handleDocumentClick(event) {
 function handleDocumentKeydown(event) {
     if (event.key === 'Escape') {
         closeThemeDropdown();
-        if (!dom.modalLocation.classList.contains('d-none')) {
-            closeModal();
-        }
-    }
-
-    if (!dom.modalLocation.classList.contains('d-none') && event.key === 'Tab') {
-        const focusableElements = dom.modalLocation.querySelectorAll('button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"])');
-        if (focusableElements.length > 0) {
-            const firstElement = focusableElements[0];
-            const lastElement = focusableElements[focusableElements.length - 1];
-
-            if (event.shiftKey) {
-                if (document.activeElement === firstElement) {
-                    lastElement.focus();
-                    event.preventDefault();
-                }
-            } else {
-                if (document.activeElement === lastElement) {
-                    firstElement.focus();
-                    event.preventDefault();
-                }
-            }
-        }
     }
 }
 
@@ -317,8 +297,6 @@ function showDashboard() {
 
 function openModal() {
     modalOpener = document.activeElement;
-    dom.modalLocation.classList.remove('d-none');
-    dom.locationContainer.classList.add('d-none');
     dom.btnManualLocation.setAttribute('aria-expanded', 'true');
 
     const savedLoc = localStorage.getItem('paincast_location');
@@ -327,14 +305,11 @@ function openModal() {
         dom.inputLocation.value = locationName || '';
     }
     
-    setTimeout(() => {
-        dom.inputLocation.focus();
-    }, 10);
+    dom.modalLocation.showModal();
+    dom.inputLocation.focus();
 }
 
 function closeModal() {
-    dom.modalLocation.classList.add('d-none');
-    dom.locationContainer.classList.remove('d-none');
     dom.btnManualLocation.setAttribute('aria-expanded', 'false');
     if (modalOpener) {
         modalOpener.focus();
@@ -415,7 +390,9 @@ function showLocationUnavailable(reason) {
     dom.dashboard.classList.add('d-none');
     dom.errorState.classList.add('d-none');
     dom.locationContainer.classList.add('d-none');
-    dom.modalLocation.classList.add('d-none');
+    if (dom.modalLocation.open) {
+        dom.modalLocation.close();
+    }
     dom.locationUnavailableState.classList.remove('d-none');
     
     setTimeout(() => {
@@ -529,7 +506,7 @@ async function handleManualSubmit() {
         }
 
         localStorage.setItem('paincast_location', JSON.stringify({ lat, lon, manual: true, locationName }));
-        closeModal();
+        dom.modalLocation.close();
         fetchData(lat, lon, locationName);
     } catch (e) {
         console.error(e);
@@ -627,6 +604,13 @@ function processWeatherData(data, locationName) {
     renderChart(labels, forecastData);
     renderWeeklyOutlook(buildWeeklyOutlook(hourly, currentIndex));
     showDashboard();
+
+    // Update live region announcer
+    if (dom.accessibilityAnnouncer) {
+        const severity = getStylesForIndex(currentIndexVal).label;
+        const announcement = `Weather data loaded for ${locationName || 'current location'}. Current Pain Index is ${currentIndexVal} out of 10, indicating ${severity}. Current weather: ${Math.round(current.temperature_2m)} degrees Fahrenheit, ${Math.round(current.relative_humidity_2m)} percent humidity, ${Math.round(current.pressure_msl)} hPa pressure, and ${Math.round(current.wind_speed_10m)} km/h wind.`;
+        dom.accessibilityAnnouncer.textContent = announcement;
+    }
 }
 
 function buildWeeklyOutlook(hourly, startIndex) {
@@ -706,6 +690,8 @@ function updateDashboardUI(current, scores, index, locationName) {
 
     // Main Index
     dom.painValue.textContent = index;
+    const severityStyles = getStylesForIndex(index);
+    dom.painValue.setAttribute('aria-label', `${index} out of 10, ${severityStyles.label}`);
 
     // Clear old classes
     dom.painValue.classList.remove('pain-low', 'pain-med', 'pain-high');
@@ -727,17 +713,17 @@ function renderWeeklyOutlook(days) {
             <article class="weekly-card ${toneClass}">
                 <div class="d-flex align-items-start justify-content-between gap-3 mb-3">
                     <div>
-                        <p class="weekly-card-day mb-1">${day.dayLabel}</p>
+                        <h3 class="weekly-card-day mb-1">${day.dayLabel}</h3>
                         <p class="weekly-card-date mb-0">${day.dateLabel}</p>
                     </div>
                     <div class="weekly-card-index-wrap text-end">
-                        <p class="weekly-card-index mb-0">${day.painIndex}<span>/10</span></p>
+                        <p class="weekly-card-index mb-0" aria-label="Pain Index: ${day.painIndex} out of 10">${day.painIndex}<span>/10</span></p>
                         <p class="weekly-card-label mb-0">${day.label}</p>
                     </div>
                 </div>
-                <div class="weekly-card-meta">
-                    <span>${day.tempLow}° to ${day.tempHigh}°F</span>
-                    <span>${day.avgHumidity}% humidity</span>
+                <div class="weekly-card-meta" role="list">
+                    <span role="listitem"><span class="visually-hidden">Temperature: </span>${day.tempLow}° to ${day.tempHigh}°F</span>
+                    <span role="listitem"><span class="visually-hidden">Humidity: </span>${day.avgHumidity}% humidity</span>
                 </div>
             </article>
         `;
@@ -848,6 +834,20 @@ function renderChart(labels, data) {
             }
         }
     });
+
+    // Populate accessible forecast table
+    if (dom.forecastTableBody) {
+        dom.forecastTableBody.innerHTML = data.map((val, idx) => {
+            const styles = getStylesForIndex(val);
+            return `
+                <tr>
+                    <td>${labels[idx]}</td>
+                    <td>${val} / 10</td>
+                    <td>${styles.label}</td>
+                </tr>
+            `;
+        }).join('');
+    }
 }
 
 // Boot

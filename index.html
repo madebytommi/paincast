@@ -16,6 +16,9 @@
 
 <body class="bg-slate-900 text-light min-vh-100 d-flex flex-column align-items-center">
 
+    <!-- Announcement region for screen readers -->
+    <div id="accessibility-announcer" class="visually-hidden" aria-live="polite" aria-atomic="true"></div>
+
     <header class="w-100 text-center py-4 mt-4">
         <div class="w-100 d-flex justify-content-end mb-3">
             <div class="dropdown me-3">
@@ -30,7 +33,7 @@
                     <li><button class="dropdown-item theme-option" type="button" data-theme-value="contrast">High Contrast</button></li>
                 </ul>
             </div>
-            <button id="btn-audio-toggle" class="btn btn-sm btn-slate-700 text-light rounded-3 custom-transition me-3" type="button" title="Toggle retro music">
+            <button id="btn-audio-toggle" class="btn btn-sm btn-slate-700 text-light rounded-3 custom-transition me-3" type="button" title="Toggle retro music" aria-pressed="false">
                 <i id="audio-toggle-icon" class="fa-solid fa-play me-1"></i>
                 <span id="audio-toggle-label">Music</span>
             </button>
@@ -41,14 +44,14 @@
         <p class="text-slate-400 mt-2">Helping you turn weather into your ally, one forecast at a time</p>
     </header>
 
-    <section class="hero-blurb text-center px-3 mb-2">
+    <div class="hero-blurb text-center px-3 mb-2">
         <p class="text-slate-300 fs-5 lh-lg max-w-md mx-auto mb-2">
             Welcome to <span class="text-gradient fw-semibold">PainCast</span> - your daily weather companion for chronic pain.
         </p>
         <p class="text-slate-400 mb-0 max-w-lg mx-auto">
             We turn temperature, pressure, and humidity into a simple 1-10 pain forecast so you can plan your day with confidence instead of surprise flares.
         </p>
-    </section>
+    </div>
 
     <main class="w-100 max-w-4xl px-3 flex-grow-1 d-flex flex-column align-items-center gap-4">
 
@@ -71,15 +74,16 @@
             </div>
         </div>
 
-        <!-- Manual Location Modal (Hidden by default) -->
-        <div id="modal-location" role="dialog" aria-modal="true" aria-labelledby="modal-location-title"
-            class="d-none w-100 modal-surface rounded-4 p-4 shadow-lg position-relative animate-fade-in border">
+        <!-- Manual Location Modal -->
+        <dialog id="modal-location" aria-labelledby="modal-location-title"
+            class="w-100 modal-surface rounded-4 p-4 shadow-lg position-relative animate-fade-in border">
             <button id="btn-close-modal" aria-label="Close location dialog."
                 class="btn btn-link position-absolute top-0 end-0 mt-2 me-2 text-slate-400 hover-text-dark text-decoration-none">
                 <i class="fa-solid fa-xmark fs-5" aria-hidden="true"></i>
             </button>
             <h2 id="modal-location-title" class="fs-5 fw-semibold mb-3 text-light">Enter Location</h2>
             <div class="d-flex flex-column flex-sm-row gap-2">
+                <label for="input-location" class="visually-hidden">City, State or ZIP</label>
                 <input type="text" id="input-location" placeholder="City, State or ZIP (e.g., Nashville, TN)"
                     class="form-control bg-slate-900 border-slate-700 text-light py-2 px-3 rounded-3"
                     autocomplete="off">
@@ -88,17 +92,18 @@
             </div>
             <p class="small text-slate-500 mt-2 mb-0"><i class="fa-solid fa-circle-info me-1"></i> Powered by
                 OpenStreetMap Geocoding.</p>
-        </div>
+        </dialog>
 
         <!-- Location Unavailable State -->
-        <div id="location-unavailable-state" class="d-none w-100 glass-card rounded-4 p-4 text-center">
+        <div id="location-unavailable-state" class="d-none w-100 glass-card rounded-4 p-4 text-center" aria-live="polite">
             <i class="fa-solid fa-location-slash display-6 mb-3 text-warning"></i>
-            <h3 class="fs-5 fw-bold mb-2 text-light">Location Access Unavailable</h3>
+            <h2 class="fs-5 fw-bold mb-2 text-light">Location Access Unavailable</h2>
             <p class="text-slate-400 mb-3 max-w-lg mx-auto">
                 Location access was unavailable (it may be disabled, unsupported, or timed out).
                 Please enter a city, state, or ZIP code below to view your PainCast forecast, or use the demo location.
             </p>
             <div class="d-flex flex-column flex-sm-row gap-2 max-w-md mx-auto mb-3">
+                <label for="input-no-location" class="visually-hidden">City, State or ZIP</label>
                 <input type="text" id="input-no-location" placeholder="City, State or ZIP (e.g., Nashville, TN)"
                     class="form-control bg-slate-900 border-slate-700 text-light py-2 px-3 rounded-3"
                     autocomplete="off">
@@ -111,7 +116,7 @@
         </div>
 
         <!-- Loading State -->
-        <div id="loading-state" class="w-100 py-5 d-flex flex-column justify-content-center align-items-center">
+        <div id="loading-state" class="w-100 py-5 d-flex flex-column justify-content-center align-items-center" aria-live="polite">
             <div class="spinner-border text-primary custom-spinner" role="status">
                 <span class="visually-hidden">Loading...</span>
             </div>
@@ -119,9 +124,9 @@
         </div>
 
         <!-- Error State -->
-        <div id="error-state" class="d-none w-100 error-card rounded-4 p-4 text-center">
+        <div id="error-state" class="d-none w-100 error-card rounded-4 p-4 text-center" aria-live="assertive">
             <i class="fa-solid fa-triangle-exclamation display-6 mb-3 text-danger"></i>
-            <h3 class="fs-5 fw-bold mb-2 text-danger-light">Data Fetch Failed</h3>
+            <h2 class="fs-5 fw-bold mb-2 text-danger-light">Data Fetch Failed</h2>
             <p id="error-message" class="text-danger-lighter mb-0">We couldn't retrieve the weather data.</p>
             <button id="btn-retry" class="btn btn-danger mt-3 px-4 fw-medium rounded-3">Try Again</button>
         </div>
@@ -275,22 +280,40 @@
             </div>
 
             <!-- 24-Hour Forecast Chart -->
-            <div class="bg-slate-800 border-slate-700 rounded-4 p-4 shadow-lg mb-5">
-                <h2
+            <section class="bg-slate-800 border-slate-700 rounded-4 p-4 shadow-lg mb-5" aria-labelledby="forecast-chart-title">
+                <h2 id="forecast-chart-title"
                     class="text-slate-400 fw-semibold mb-3 text-uppercase tracking-widest small border-bottom border-slate-700 pb-2">
                     24-Hour Pain Outlook</h2>
                 <div class="w-100 position-relative chart-container">
-                    <canvas id="forecast-chart"></canvas>
+                    <canvas id="forecast-chart" role="img" aria-label="24-Hour Pain Outlook Chart" aria-describedby="forecast-chart-desc"></canvas>
                 </div>
-            </div>
+                <p id="forecast-chart-desc" class="visually-hidden">Bar chart representing the 24-hour pain index forecast. Below is an alternative text table containing the hourly forecast details.</p>
+                <details class="mt-3">
+                    <summary class="text-slate-400 small select-none" style="cursor: pointer;">Show tabular forecast data</summary>
+                    <div class="table-responsive mt-2">
+                        <table class="table table-sm table-borderless text-light align-middle mb-0" id="forecast-table">
+                            <thead>
+                                <tr>
+                                    <th scope="col">Time</th>
+                                    <th scope="col">Pain Index</th>
+                                    <th scope="col">Impact Level</th>
+                                </tr>
+                            </thead>
+                            <tbody id="forecast-table-body">
+                                <!-- Dynamically populated in script.js -->
+                            </tbody>
+                        </table>
+                    </div>
+                </details>
+            </section>
 
             <!-- 7-Day Forecast Outlook -->
-            <div class="bg-slate-800 border-slate-700 rounded-4 p-4 shadow-lg mb-5">
-                <h2
+            <section class="bg-slate-800 border-slate-700 rounded-4 p-4 shadow-lg mb-5" aria-labelledby="weekly-outlook-title">
+                <h2 id="weekly-outlook-title"
                     class="text-slate-400 fw-semibold mb-3 text-uppercase tracking-widest small border-bottom border-slate-700 pb-2">
                     7-Day Pain Outlook</h2>
                 <div id="weekly-outlook" class="weekly-outlook-grid"></div>
-            </div>
+            </section>
 
         </div>
 

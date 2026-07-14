@@ -86,6 +86,20 @@ PainCast is built using lightweight, frontend technologies:
 
 ---
 
+## ♿ Accessibility
+
+PainCast aims to be usable by everyone, with a focus on features that support individuals with chronic conditions:
+
+- **Keyboard Navigation:** All interactive elements, including the location modal and theme switcher, are fully navigable via keyboard. Focus states are clearly visible across all themes.
+- **Screen Reader Support:** Dynamic updates (such as location changes and weather data loading) are announced via ARIA live regions. A visually hidden, screen-reader-accessible table is automatically generated as an alternative to the visual 24-hour Canvas chart.
+- **Visual Accommodations:** The application supports 200% browser zoom without breaking the layout. Four distinct visual themes are provided, including a High Contrast mode that maximizes text legibility.
+- **Reduced Motion:** Non-essential animations and transitions are automatically disabled if the user's operating system prefers reduced motion.
+
+> [!NOTE]
+> **Limitations:** While we strive for an inclusive experience, PainCast has not yet undergone a comprehensive, professional WCAG 2.2 audit. Automated accessibility testing coverage is currently limited, and some complex UI states may still present challenges for certain assistive technologies.
+
+---
+
 ## ⚠️ Limitations
 
 - **General Heuristics:** The calculation uses a static mathematical approximation. It does not adapt to individual profiles, clinical diagnoses, or specific chronic pain types (e.g., fibromyalgia vs. rheumatoid arthritis).
