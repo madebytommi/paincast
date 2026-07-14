@@ -30,6 +30,15 @@ test('App Utils Tests', async (t) => {
             assert.strictEqual(storage.getItem('test_key'), 'test_value');
         });
 
+        await st.test('Initialization failure returns no-op storage', () => {
+            const throwingImpl = {
+                getItem: () => { throw new Error("SecurityError on init"); }
+            };
+            const storage = createSafeStorage(throwingImpl);
+            assert.strictEqual(storage.getItem('key'), null);
+            assert.doesNotThrow(() => storage.setItem('key', 'val'));
+        });
+
         await st.test('Successful JSON read and write', () => {
             const storage = createSafeStorage(createFakeStorage());
             const obj = { foo: 'bar' };
@@ -119,6 +128,12 @@ test('App Utils Tests', async (t) => {
     await t.test('validateWeatherPayload Tests', async (st) => {
         const createValidPayload = () => {
             const len = 24;
+            const hrTime = [];
+            for (let i = 0; i < len; i++) {
+                const hour = (12 + i) % 24;
+                const day = 1 + Math.floor((12 + i) / 24);
+                hrTime.push(`2024-01-0${day}T${String(hour).padStart(2, '0')}:00`);
+            }
             return {
                 current: {
                     temperature_2m: 70, relative_humidity_2m: 50,
@@ -126,7 +141,7 @@ test('App Utils Tests', async (t) => {
                     time: "2024-01-01T12:00"
                 },
                 hourly: {
-                    time: Array(len).fill("2024-01-01T12:00"),
+                    time: hrTime,
                     temperature_2m: Array(len).fill(70),
                     relative_humidity_2m: Array(len).fill(50),
                     pressure_msl: Array(len).fill(1010)
@@ -205,6 +220,20 @@ test('App Utils Tests', async (t) => {
             assertValidationError(p);
             
             p.hourly.time[3] = "2024-01-0"; // Length < 10
+            assertValidationError(p);
+        });
+
+        await st.test('Hourly timestamps not strictly ordered', () => {
+            let p = createValidPayload();
+            p.hourly.time[5] = "2023-12-31T12:00"; // Unordered
+            assertValidationError(p);
+        });
+
+        await st.test('Insufficient 24-hour horizon from current time', () => {
+            let p = createValidPayload();
+            // Start index will be based on current hour. If we set current time to index 5, 
+            // there are only 19 elements remaining (from index 5 to 23).
+            p.current.time = p.hourly.time[5];
             assertValidationError(p);
         });
     });

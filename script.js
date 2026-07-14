@@ -438,8 +438,6 @@ async function handleManualSubmit() {
         const geoResult = await geocodeLocation(query);
         if (!geoResult) {
             alert("Location not found. Please try again.");
-            dom.btnSubmitLocation.disabled = false;
-            dom.btnSubmitLocation.textContent = "Update";
             return;
         }
 
