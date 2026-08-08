@@ -102,9 +102,12 @@ test('App Utils Tests', async (t) => {
             assert.strictEqual(res.locationName, "Nashville, TN");
         });
 
-        await st.test('Empty result collection', () => {
+        await st.test('Empty result collection or invalid inputs', () => {
             assert.strictEqual(parseNominatimResult([]), null);
             assert.strictEqual(parseNominatimResult(null), null);
+            assert.strictEqual(parseNominatimResult(undefined), null);
+            assert.strictEqual(parseNominatimResult({}), null);
+            assert.strictEqual(parseNominatimResult("not an array"), null);
         });
 
         await st.test('Missing/Non-numeric coordinates', () => {
@@ -116,6 +119,16 @@ test('App Utils Tests', async (t) => {
             const data = [{ lat: "1", lon: "1", display_name: "Somewhere, Region, Country" }];
             const res = parseNominatimResult(data);
             assert.strictEqual(res.locationName, "Somewhere, Region");
+        });
+
+        await st.test('Fallback behavior when display_name is missing or empty', () => {
+            const dataWithNameOnly = [{ lat: "36.16", lon: "-86.78", name: "Nashville" }];
+            const res1 = parseNominatimResult(dataWithNameOnly);
+            assert.strictEqual(res1.locationName, "Nashville");
+
+            const dataNoNameNoDisplay = [{ lat: "36.1627", lon: "-86.7816" }];
+            const res2 = parseNominatimResult(dataNoNameNoDisplay);
+            assert.strictEqual(res2.locationName, "GPS Coord: 36.16, -86.78");
         });
 
         await st.test('International location formats', () => {
@@ -157,7 +170,12 @@ test('App Utils Tests', async (t) => {
             assert.doesNotThrow(() => validateWeatherPayload(createValidPayload()));
         });
 
-        await st.test('Missing current or hourly', () => {
+        await st.test('Missing current or hourly or null payload', () => {
+            assertValidationError(null);
+            assertValidationError(undefined);
+            assertValidationError({});
+            assertValidationError("not an object");
+
             let p1 = createValidPayload(); delete p1.current;
             assertValidationError(p1);
             let p2 = createValidPayload(); delete p2.hourly;
@@ -172,6 +190,14 @@ test('App Utils Tests', async (t) => {
             p = createValidPayload();
             p.current.pressure_msl = NaN;
             assertValidationError(p);
+
+            p = createValidPayload();
+            p.current.wind_speed_10m = null;
+            assertValidationError(p);
+
+            p = createValidPayload();
+            p.current.relative_humidity_2m = null;
+            assertValidationError(p);
         });
 
         await st.test('Invalid current timestamp', () => {
@@ -180,6 +206,9 @@ test('App Utils Tests', async (t) => {
             assertValidationError(p);
             
             p.current.time = "";
+            assertValidationError(p);
+
+            p.current.time = null;
             assertValidationError(p);
         });
 
@@ -204,7 +233,7 @@ test('App Utils Tests', async (t) => {
             assertValidationError(p);
         });
 
-        await st.test('NaN or string values in numerical arrays', () => {
+        await st.test('NaN, null, or non-numeric values in numerical arrays', () => {
             let p1 = createValidPayload();
             p1.hourly.temperature_2m[5] = NaN;
             assertValidationError(p1);
@@ -212,6 +241,10 @@ test('App Utils Tests', async (t) => {
             let p2 = createValidPayload();
             p2.hourly.pressure_msl[10] = "1015";
             assertValidationError(p2);
+
+            let p3 = createValidPayload();
+            p3.hourly.relative_humidity_2m[3] = null;
+            assertValidationError(p3);
         });
 
         await st.test('Missing or malformed hourly timestamps', () => {

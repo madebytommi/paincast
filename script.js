@@ -377,9 +377,7 @@ function showLocationUnavailable(reason) {
 
 async function geocodeLocation(query) {
     const geoUrl = `https://nominatim.openstreetmap.org/search?q=${encodeURIComponent(query)}&format=json&limit=1`;
-    const res = await fetch(geoUrl, {
-        headers: { 'User-Agent': 'PainCastApp/1.0' }
-    });
+    const res = await fetch(geoUrl);
     
     if (!res.ok) throw new Error("Geocoding network error");
     const geoData = await res.json();
